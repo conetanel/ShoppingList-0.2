@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>🧾 רשימת קניות שבועית</title>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Assistant', sans-serif;
+      background-color: #f1f3f4;
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background-color: white;
+      border-radius: 8px;
+      padding: 2rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #5f6368;
+    }
+
+    .category {
+      font-weight: bold;
+      margin-top: 1.5rem;
+      color: #673ab7; /* Google Forms purple */
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      margin: 0.5rem 0;
+      background-color: #f8f9fa;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+    }
+
+    .share-btn {
+      display: block;
+      text-align: center;
+      background-color: #25d366;
+      color: white;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a id="whatsapp-link" class="share-btn" href="#" target="_blank">📤 שתף ב-WhatsApp</a>
+    <h1>רשימת קניות</h1>
+    <div id="shopping-list"></div>
+  </div>
+
+  <script>
+    const SHEET_ID = "1Ilbwej4EsJYPuSKzEaDw7mRANYmND9_CzUkEAUW_I38";
+    const SHEET_NAME = "Responses"; // שנה לשם המתאים אם צריך
+
+    const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+    fetch(sheetURL)
+      .then(res => res.text())
+      .then(text => {
+        const json = JSON.parse(text.substr(47).slice(0, -2)); // הסרה של עטיפת JSON
+        const rows = json.table.rows;
+        const lastResponse = rows[rows.length - 1].c;
+
+        const container = document.getElementById("shopping-list");
+        const listByCategory = {};
+        let currentCategory = "";
+
+        lastResponse.forEach((cell, i) => {
+          if (!cell || !cell.v) return;
+          const value = cell.v.trim();
+
+          if (value.startsWith("🛒") || value.startsWith("🥬") || value.startsWith("🍞") || value.startsWith("🧀")) {
+            currentCategory = value;
+            if (!listByCategory[currentCategory]) {
+              listByCategory[currentCategory] = [];
+            }
+          } else {
+            if (currentCategory) listByCategory[currentCategory].push(value);
+          }
+        });
+
+        let fullList = "";
+        for (let [cat, items] of Object.entries(listByCategory)) {
+          fullList += `<div class="category">${cat}</div><ul>`;
+          items.forEach(item => {
+            fullList += `<li>${item}</li>`;
+          });
+          fullList += `</ul>`;
+        }
+
+        container.innerHTML = fullList;
+
+        const whatsappText = encodeURIComponent("📋 רשימת קניות:\n\n" +
+          Object.entries(listByCategory).map(([cat, items]) =>
+            `${cat}\n${items.map(i => "• " + i).join("\n")}`
+          ).join("\n\n"));
+
+        document.getElementById("whatsapp-link").href =
+          `https://wa.me/?text=${whatsappText}`;
+      });
+  </script>
+</body>
+</html>
