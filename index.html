@@ -66,54 +66,49 @@
 
   <script>
     const SHEET_ID = "1Ilbwej4EsJYPuSKzEaDw7mRANYmND9_CzUkEAUW_I38";
-    const SHEET_NAME = "Responses"; // שנה לשם המתאים אם צריך
+const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 
-    const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+fetch(sheetURL)
+  .then(res => res.text())
+  .then(text => {
+    const json = JSON.parse(text.substr(47).slice(0, -2));
+    const rows = json.table.rows;
+    const cols = json.table.cols;
 
-    fetch(sheetURL)
-      .then(res => res.text())
-      .then(text => {
-        const json = JSON.parse(text.substr(47).slice(0, -2)); // הסרה של עטיפת JSON
-        const rows = json.table.rows;
-        const lastResponse = rows[rows.length - 1].c;
+    // ניקח את השורה האחרונה (האחרונה שהוגשה בטופס)
+    const last = rows[rows.length - 1].c;
 
-        const container = document.getElementById("shopping-list");
-        const listByCategory = {};
-        let currentCategory = "";
+    const container = document.getElementById("shopping-list");
+    let outputHTML = "";
+    let whatsappText = "📋 רשימת קניות:\n\n";
 
-        lastResponse.forEach((cell, i) => {
-          if (!cell || !cell.v) return;
-          const value = cell.v.trim();
+    // עוברים על כל העמודות
+    last.forEach((cell, i) => {
+      if (!cell || !cell.v) return;
 
-          if (value.startsWith("🛒") || value.startsWith("🥬") || value.startsWith("🍞") || value.startsWith("🧀")) {
-            currentCategory = value;
-            if (!listByCategory[currentCategory]) {
-              listByCategory[currentCategory] = [];
-            }
-          } else {
-            if (currentCategory) listByCategory[currentCategory].push(value);
-          }
+      const category = cols[i].label;
+      const items = cell.v.split(",").map(s => s.trim()).filter(Boolean);
+
+      if (items.length) {
+        outputHTML += `<div class="category">${category}</div><ul>`;
+        items.forEach(item => {
+          outputHTML += `<li>${item}</li>`;
         });
+        outputHTML += `</ul>`;
 
-        let fullList = "";
-        for (let [cat, items] of Object.entries(listByCategory)) {
-          fullList += `<div class="category">${cat}</div><ul>`;
-          items.forEach(item => {
-            fullList += `<li>${item}</li>`;
-          });
-          fullList += `</ul>`;
-        }
+        whatsappText += `${category}\n${items.map(item => "• " + item).join("\n")}\n\n`;
+      }
+    });
 
-        container.innerHTML = fullList;
+    container.innerHTML = outputHTML;
 
-        const whatsappText = encodeURIComponent("📋 רשימת קניות:\n\n" +
-          Object.entries(listByCategory).map(([cat, items]) =>
-            `${cat}\n${items.map(i => "• " + i).join("\n")}`
-          ).join("\n\n"));
-
-        document.getElementById("whatsapp-link").href =
-          `https://wa.me/?text=${whatsappText}`;
-      });
+    const whatsappLink = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
+    document.getElementById("whatsapp-link").href = whatsappLink;
+  })
+  .catch(err => {
+    document.getElementById("shopping-list").innerHTML = "❌ שגיאה בטעינת הנתונים.";
+    console.error(err);
+  });
   </script>
 </body>
 </html>
