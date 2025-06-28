@@ -82,23 +82,24 @@ fetch(sheetURL)
     let outputHTML = "";
     let whatsappText = "📋 רשימת קניות:\n\n";
 
-    // עוברים על כל העמודות
-    last.forEach((cell, i) => {
-      if (!cell || !cell.v) return;
+  // מתחילים מ-i=1 כדי לדלג על "חותמת זמן"
+for (let i = 1; i < last.length; i++) {
+  const cell = last[i];
+  if (!cell || !cell.v) continue;
 
-      const category = cols[i].label;
-      const items = cell.v.split(",").map(s => s.trim()).filter(Boolean);
+  const category = cols[i].label;
+  const items = cell.v.split(",").map(s => s.trim()).filter(Boolean);
 
-      if (items.length) {
-        outputHTML += `<div class="category">${category}</div><ul>`;
-        items.forEach(item => {
-          outputHTML += `<li>${item}</li>`;
-        });
-        outputHTML += `</ul>`;
-
-        whatsappText += `${category}\n${items.map(item => "• " + item).join("\n")}\n\n`;
-      }
+  if (items.length) {
+    outputHTML += `<div class="category">${category}</div><ul>`;
+    items.forEach(item => {
+      outputHTML += `<li>${item}</li>`;
     });
+    outputHTML += `</ul>`;
+
+    whatsappText += `${category}\n${items.map(item => "• " + item).join("\n")}\n\n`;
+  }
+});
 
     container.innerHTML = outputHTML;
 
