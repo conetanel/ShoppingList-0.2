@@ -63,17 +63,6 @@ function createItemElement(itemObj, category) {
     const itemDiv = document.createElement('div');
     itemDiv.className = 'item';
     
-    // Create iOS-style toggle switch
-    const toggleSwitchContainer = document.createElement('label');
-    toggleSwitchContainer.className = 'toggle-switch';
-    const toggleInput = document.createElement('input');
-    toggleInput.type = 'checkbox';
-    const toggleSlider = document.createElement('span');
-    toggleSlider.className = 'slider round';
-    toggleSwitchContainer.appendChild(toggleInput);
-    toggleSwitchContainer.appendChild(toggleSlider);
-
-    // Create item name
     const itemNameSpan = document.createElement('span');
     itemNameSpan.textContent = itemObj.item;
     itemNameSpan.className = 'item-name';
@@ -81,21 +70,22 @@ function createItemElement(itemObj, category) {
     itemDiv.appendChild(itemNameSpan);
 
     const itemControlsDiv = document.createElement('div');
-    itemControlsDiv.className = 'item-controls locked'; // Start in locked state
+    itemControlsDiv.className = 'item-controls locked';
 
+    let pickerInstance;
     if (itemObj.type === 'כמות') {
         const quantityButton = document.createElement('button');
         quantityButton.className = 'picker-button';
         quantityButton.textContent = '1 יחידות';
         itemControlsDiv.appendChild(quantityButton);
         
-        // Initialize the mobiscroll picker correctly
-        let quantityPicker = mobiscroll.select('#' + itemObj.item.replace(/\s/g, ''), {
+        // אתחול MobiScroll ישירות על הכפתור
+        pickerInstance = mobiscroll.select(quantityButton, {
             theme: 'ios',
             display: 'bottom',
             data: Array.from({length: 10}, (_, i) => ({ value: `${i + 1} יחידות`, text: `${i + 1} יחידות` })),
             onInit: (event, inst) => {
-                inst.setVal('1 יחידות');
+                inst.setVal('1 יחידות', true, false);
             },
             onChange: (event, inst) => {
                 quantityButton.textContent = inst.getVal();
@@ -105,25 +95,20 @@ function createItemElement(itemObj, category) {
             }
         });
         
-        // This is the fix: link the button to the mobiscroll instance
-        quantityButton.addEventListener('click', () => {
-            quantityPicker.open();
-        });
-
-
     } else if (itemObj.type === 'גודל') {
         const sizeOptions = ['S', 'M', 'L'];
         const sizeButton = document.createElement('button');
         sizeButton.className = 'picker-button';
         sizeButton.textContent = 'S';
         itemControlsDiv.appendChild(sizeButton);
-
-        let sizePicker = mobiscroll.select('#' + itemObj.item.replace(/\s/g, ''), {
+        
+        // אתחול MobiScroll ישירות על הכפתור
+        pickerInstance = mobiscroll.select(sizeButton, {
             theme: 'ios',
             display: 'bottom',
             data: sizeOptions.map(size => ({ value: size, text: size })),
             onInit: (event, inst) => {
-                inst.setVal('S');
+                inst.setVal('S', true, false);
             },
             onChange: (event, inst) => {
                 sizeButton.textContent = inst.getVal();
@@ -133,15 +118,19 @@ function createItemElement(itemObj, category) {
             }
         });
         
-        // This is the fix: link the button to the mobiscroll instance
-        sizeButton.addEventListener('click', () => {
-            sizePicker.open();
-        });
-
     } else {
-        itemControlsDiv.style.display = 'none'; // No controls for regular items
+        itemControlsDiv.style.display = 'none';
     }
     
+    const toggleSwitchContainer = document.createElement('label');
+    toggleSwitchContainer.className = 'toggle-switch';
+    const toggleInput = document.createElement('input');
+    toggleInput.type = 'checkbox';
+    const toggleSlider = document.createElement('span');
+    toggleSlider.className = 'slider round';
+    toggleSwitchContainer.appendChild(toggleInput);
+    toggleSwitchContainer.appendChild(toggleSlider);
+
     itemDiv.appendChild(itemControlsDiv);
     itemDiv.appendChild(toggleSwitchContainer);
 
@@ -165,7 +154,6 @@ function createItemElement(itemObj, category) {
 
     return itemDiv;
 }
-
 
 shareButton.addEventListener('click', () => {
     let message = "📋 רשימת קניות:\n\n";
