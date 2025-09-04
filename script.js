@@ -72,71 +72,45 @@ function createItemElement(itemObj, category) {
     const itemControlsDiv = document.createElement('div');
     itemControlsDiv.className = 'item-controls locked';
 
-
-
-                    let pickerInstance;
-                
-                if (itemObj.type === 'כמות') {
-                    const quantityButton = document.createElement('button');
-                    quantityButton.className = 'picker-button';
-                    quantityButton.textContent = '1 יחידות';
-                    itemControlsDiv.appendChild(quantityButton);
-                
-                    // השתמש ב-Picker עם עיגון לכפתור
-                    const quantityData = Array.from({length: 10}, (_, i) => `${i + 1} יחידות`);
-                    pickerInstance = mobiscroll.picker({
-                        theme: 'ios',
-                        display: 'bottom',
-                        anchor: quantityButton,     // <-- העגינה לכפתור
-                        buttons: ['cancel', 'set'],
-                        wheels: [{
-                            label: 'כמות',
-                            data: quantityData
-                        }],
-                        onInit: (event, inst) => {
-                            inst.setVal([quantityData[0]], true); // "1 יחידות"
-                        },
-                        onSet: (event, inst) => {
-                            const val = inst.getVal()[0];
-                            quantityButton.textContent = val;
-                            if (toggleInput.checked) {
-                                shoppingList[itemObj.item] = { category, quantity: val };
-                            }
-                        }
-                    });
+    if (itemObj.type === 'כמות') {
+        const quantitySliderContainer = document.createElement('div');
+        quantitySliderContainer.className = 'quantity-slider-container';
+        quantitySliderContainer.innerHTML = `<input type="range" min="1" max="10" value="1"><span class="slider-value">1</span>`;
+        itemControlsDiv.appendChild(quantitySliderContainer);
+        
+        const slider = quantitySliderContainer.querySelector('input');
+        const sliderValue = quantitySliderContainer.querySelector('.slider-value');
+        
+        slider.addEventListener('input', (e) => {
+            sliderValue.textContent = e.target.value;
+            if (toggleInput.checked) {
+                shoppingList[itemObj.item] = { category, quantity: `${e.target.value} יחידות` };
+            }
+        });
+    } else if (itemObj.type === 'גודל') {
+        const sizeOptions = ['S', 'M', 'L'];
+        const sizeButtonsContainer = document.createElement('div');
+        sizeButtonsContainer.className = 'size-buttons-container';
+        sizeOptions.forEach(size => {
+            const button = document.createElement('button');
+            button.className = 'size-button';
+            button.textContent = size;
+            button.addEventListener('click', () => {
+                sizeButtonsContainer.querySelectorAll('.size-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                if (toggleInput.checked) {
+                    shoppingList[itemObj.item] = { category, size };
                 }
-                else if (itemObj.type === 'גודל') {
-                    const sizeOptions = ['S', 'M', 'L'];
-                    const sizeButton = document.createElement('button');
-                    sizeButton.className = 'picker-button';
-                    sizeButton.textContent = 'S';
-                    itemControlsDiv.appendChild(sizeButton);
-                
-                    pickerInstance = mobiscroll.picker({
-                        theme: 'ios',
-                        display: 'bottom',
-                        anchor: sizeButton,         // <-- העגינה לכפתור
-                        buttons: ['cancel', 'set'],
-                        wheels: [{
-                            label: 'גודל',
-                            data: sizeOptions
-                        }],
-                        onInit: (event, inst) => {
-                            inst.setVal(['S'], true);
-                        },
-                        onSet: (event, inst) => {
-                            const val = inst.getVal()[0];
-                            sizeButton.textContent = val;
-                            if (toggleInput.checked) {
-                                shoppingList[itemObj.item] = { category, size: val };
-                            }
-                        }
-                    });
-                }
-                else {
-                    itemControlsDiv.style.display = 'none';
-                }
+            });
+            sizeButtonsContainer.appendChild(button);
+        });
+        itemControlsDiv.appendChild(sizeButtonsContainer);
+    } else {
+        // No controls for regular items, so we just remove the container
+        itemControlsDiv.remove();
+    }
     
+    // Create the toggle switch
     const toggleSwitchContainer = document.createElement('label');
     toggleSwitchContainer.className = 'toggle-switch';
     const toggleInput = document.createElement('input');
@@ -146,23 +120,30 @@ function createItemElement(itemObj, category) {
     toggleSwitchContainer.appendChild(toggleInput);
     toggleSwitchContainer.appendChild(toggleSlider);
 
-    itemDiv.appendChild(itemControlsDiv);
+    // Append controls (if they exist) and toggle switch to the item
+    if (itemControlsDiv.parentElement) {
+        itemDiv.appendChild(itemControlsDiv);
+    }
     itemDiv.appendChild(toggleSwitchContainer);
 
     toggleInput.addEventListener('change', (e) => {
         if (e.target.checked) {
-            itemControlsDiv.classList.remove('locked');
+            if (itemControlsDiv.parentElement) {
+                itemControlsDiv.classList.remove('locked');
+            }
             if (itemObj.type === 'כמות') {
-                const quantityButton = itemControlsDiv.querySelector('.picker-button');
-                shoppingList[itemObj.item] = { category, quantity: quantityButton.textContent };
+                const sliderValue = itemControlsDiv.querySelector('.slider-value').textContent;
+                shoppingList[itemObj.item] = { category, quantity: `${sliderValue} יחידות` };
             } else if (itemObj.type === 'גודל') {
-                const sizeButton = itemControlsDiv.querySelector('.picker-button');
-                shoppingList[itemObj.item] = { category, size: sizeButton.textContent };
+                const activeSizeButton = itemControlsDiv.querySelector('.size-button.active');
+                shoppingList[itemObj.item] = { category, size: activeSizeButton ? activeSizeButton.textContent : 'S' };
             } else {
                 shoppingList[itemObj.item] = { category };
             }
         } else {
-            itemControlsDiv.classList.add('locked');
+            if (itemControlsDiv.parentElement) {
+                itemControlsDiv.classList.add('locked');
+            }
             delete shoppingList[itemObj.item];
         }
     });
