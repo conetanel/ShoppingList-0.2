@@ -98,18 +98,18 @@ h1 {
 
 .quantity-slider-container input[type="range"] {
     -webkit-appearance: none;
-    width: 60px; /* רוחב קומפקטי במיוחד */
+    width: 60px; 
     height: 6px;
     background: #e5e5ea;
     border-radius: 3px;
     outline: none;
-    margin: 0; /* הסרת מרווחים פנימיים */
+    margin: 0;
 }
 
 .quantity-slider-container input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 24px; /* הקטנת גודל הכפתור העגול */
+    width: 24px;
     height: 24px;
     background: white;
     border-radius: 50%;
@@ -125,7 +125,7 @@ h1 {
     min-width: 25px;
     text-align: left;
     direction: rtl; /* For "יחידות" etc. */
-    margin-right: 5px; /* Space between value and slider */
+    margin-right: 5px;
 }
 
 /* Size Buttons (iOS Segmented Control style) */
@@ -158,17 +158,17 @@ h1 {
 
 /* Floating Action Button (FAB) for WhatsApp */
 #share-button {
-    position: fixed; /* Keep button in place */
+    position: fixed; 
     bottom: 20px;
     left: 50%;
-    transform: translateX(-50%); /* Center the button */
-    width: 60px; /* Adjust size */
+    transform: translateX(-50%);
+    width: 60px;
     height: 60px;
-    border-radius: 50%; /* Make it round */
-    background-color: #25D366; /* WhatsApp green */
+    border-radius: 50%;
+    background-color: #25D366; 
     color: white;
     border: none;
-    font-size: 2.5rem; /* Large icon font size */
+    font-size: 2.5rem;
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     cursor: pointer;
     z-index: 1000;
