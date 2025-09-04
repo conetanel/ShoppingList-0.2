@@ -1,207 +1,25 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>🧾 רשימת קניות שבועית</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    * {
-  box-sizing: border-box;
-}
-  body {
-      font-family: 'Assistant', sans-serif;
-      background-color: #f1f3f4;
-      margin: 0;
-      padding: 1rem;
-      font-size: 16px;
-      line-height: 1.5;
-     overflow-x: hidden;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 600px;
-      margin: auto;
-      background-color: white;
-      border-radius: 8px;
-      padding: 2rem;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      font-size: 1rem;
-    }
-
-    @media (max-width: 600px) {
-      body {
-        padding: 0.5rem;
-        font-size: 18px;
-      }
-      .container {
-        padding: 1rem;
-        border-radius: 0;
-        box-shadow: none;
-        max-width: 100%;
-      }
-      li {
-        padding: 0.75rem 1rem;
-      }
-    }
-
-    h1 {
-      text-align: center;
-      color: #5f6368;
-    }
-
-    .category {
-      font-weight: bold;
-      margin-top: 1.5rem;
-      color: #673ab7; /* Google Forms purple */
-    }
-
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    li {
-      margin: 0.5rem 0;
-      background-color: #f8f9fa;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
-    }
-
-    .share-btn {
-  position: fixed;
-  bottom: 1.5rem;
-  left: 1.5rem;
-  width: 62px;
-  height: 62px;
-  border-radius: 50%;
-  background-color: #67c15e;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  z-index: 999;
-}
-
-.share-btn svg {
-  width: 60%;
-  height: 60%;
-}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>רשימת קניות</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-   <a id="whatsapp-link" class="share-btn" href="#" target="_blank" title="שלח בווטסאפ">
- <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29.17 29.32">
-  <path
-    d="M14.56 28.52
-       c-2.62 0-5.16-.74-7.37-2.13
-       l-6.03 1.93 1.96-5.84
-       a13.798 13.798 0 0 1-2.46-7.89
-       C.65 6.9 6.9.65 14.58.65
-       S28.52 6.9 28.52 14.58
-       s-6.25 13.93-13.93 13.93
-       h-.03Z"
-    style="fill-rule:evenodd;fill:#67c15e"/>
-  <path
-    d="M14.59 1.3
-       c7.32 0 13.28 5.96 13.28 13.28
-       s-5.96 13.28-13.28 13.28
-       h-.03
-       c-2.59 0-5.12-.76-7.28-2.19
-       l-5.1 1.63 1.65-4.94
-       a13.206 13.206 0 0 1-2.53-7.79
-       C1.3 7.26 7.26 1.3 14.58 1.3
-       m0-1.3
-       C6.54 0 0 6.54 0 14.58
-       c0 2.86.82 5.61 2.39 7.99
-       L.94 26.89l-.82 2.43
-       2.44-.78 4.53-1.45
-       c2.25 1.36 4.82 2.07 7.46 2.07
-       8.07 0 14.61-6.54 14.61-14.58
-       S22.63 0 14.59 0Z"
-    style="fill:#fff"/>
-  <path
-    d="M10.87 8.05
-       c-.26-.62-.45-.64-.84-.66
-       -.15 0-.3-.01-.44-.01
-       -.51 0-1.04.15-1.36.48
-       -.39.4-1.36 1.33-1.36 3.23
-       s1.39 3.75 1.58 4.01
-       c.2.26 2.71 4.22 6.61 5.84
-       3.05 1.27 3.96 1.15 4.65 1
-       1.02-.22 2.29-.97 2.61-1.87
-       .32-.91.32-1.68.23-1.84
-       -.09-.16-.35-.26-.74-.45
-       -.39-.2-2.29-1.13-2.65-1.26
-       -.35-.13-.69-.09-.95.29
-       -.37.52-.74 1.05-1.04 1.37
-       -.23.25-.62.28-.94.15
-       -.43-.18-1.63-.6-3.11-1.92
-       -1.15-1.02-1.93-2.3-2.15-2.68
-       -.23-.39-.02-.62.16-.83
-       .2-.24.38-.41.58-.64
-       .19-.23.3-.34.43-.61
-       .13-.26.04-.52-.06-.72
-       -.09-.19-.87-2.1-1.19-2.87Z"
-    style="fill-rule:evenodd;fill:#fff"/>
-</svg>
 
+    <div class="header">
+        <h1>רשימת קניות</h1>
+    </div>
 
-</a>
-    <h1>רשימת קניות</h1>
-    <div id="shopping-list"></div>
-  </div>
+    <div id="loading-spinner">טוען רשימה...</div>
 
-  <script>
-    const SHEET_ID = "1Ilbwej4EsJYPuSKzEaDw7mRANYmND9_CzUkEAUW_I38";
-    const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+    <div id="shopping-list-container"></div>
 
-    fetch(sheetURL)
-      .then(res => res.text())
-      .then(text => {
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        const rows = json.table.rows;
-        const cols = json.table.cols;
+    <div class="footer">
+        <button id="share-button">שלח בווטסאפ</button>
+    </div>
 
-        // ניקח את השורה האחרונה (האחרונה שהוגשה בטופס)
-        const last = rows[rows.length - 1].c;
-
-        const container = document.getElementById("shopping-list");
-        let outputHTML = "";
-        let whatsappText = "📋 רשימת קניות:\n\n";
-
-        // מתחילים מ-i=1 כדי לדלג על "חותמת זמן"
-        for (let i = 1; i < last.length; i++) {
-          const cell = last[i];
-          if (!cell || !cell.v) continue;
-
-          const category = cols[i].label;
-          const items = cell.v.split(",").map(s => s.trim()).filter(Boolean);
-
-          if (items.length) {
-            outputHTML += `<div class="category">${category}</div><ul>`;
-            items.forEach(item => {
-              outputHTML += `<li>${item}</li>`;
-            });
-            outputHTML += `</ul>`;
-
-            whatsappText += `${category}\n${items.map(item => "• " + item).join("\n")}\n\n`;
-          }
-        }
-
-        container.innerHTML = outputHTML;
-
-        const whatsappLink = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
-        document.getElementById("whatsapp-link").href = whatsappLink;
-      })
-      .catch(err => {
-        document.getElementById("shopping-list").innerHTML = "❌ שגיאה בטעינת הנתונים.";
-        console.error(err);
-      });
-  </script>
+    <script src="script.js"></script>
 </body>
 </html>
