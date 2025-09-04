@@ -1,5 +1,59 @@
-/* Other styles remain the same */
+/* General body and font styling - iOS base */
+body {
+    font-family: -apple-system, system-ui, sans-serif;
+    background-color: #f2f2f7; /* iOS background gray */
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
 
+/* Header and title styling - iOS Large Title style */
+.header {
+    text-align: center;
+    padding: 20px 0 10px;
+    background-color: white;
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #000;
+    margin: 0;
+    padding-bottom: 5px;
+}
+
+/* Loading spinner */
+#loading-spinner {
+    text-align: center;
+    color: #8e8e93;
+    padding: 40px;
+    font-size: 1.1rem;
+}
+
+/* Category styling - iOS Section Header (smaller and thinner) */
+.category {
+    margin-top: 30px;
+    font-size: 0.9rem; /* Smaller font size as requested */
+    font-weight: 400; /* Lighter font weight as requested */
+    color: #8e8e93; /* iOS gray text */
+    padding: 0 20px 5px;
+    text-align: right;
+}
+
+.item-list {
+    background-color: white;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 8px 15px 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Flexbox for correct alignment */
 .item {
     display: flex;
     justify-content: space-between; /* Aligns item name to right, controls to left */
@@ -44,18 +98,18 @@
 
 .quantity-slider-container input[type="range"] {
     -webkit-appearance: none;
-    width: 60px; /* **רוחב קומפקטי במיוחד** */
+    width: 60px; /* רוחב קומפקטי במיוחד */
     height: 6px;
     background: #e5e5ea;
     border-radius: 3px;
     outline: none;
-    margin: 0; /* **הסרת מרווחים פנימיים** */
+    margin: 0; /* הסרת מרווחים פנימיים */
 }
 
 .quantity-slider-container input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 24px; /* **הקטנת גודל הכפתור העגול** */
+    width: 24px; /* הקטנת גודל הכפתור העגול */
     height: 24px;
     background: white;
     border-radius: 50%;
@@ -84,4 +138,44 @@
 }
 
 .size-button {
-    background-color:
+    background-color: white;
+    color: #007aff;
+    border: none;
+    padding: 8px 15px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-left: 1px solid #007aff;
+}
+.size-button:first-child {
+    border-left: none;
+}
+
+.size-button.active {
+    background-color: #007aff;
+    color: white;
+}
+
+/* Floating Action Button (FAB) for WhatsApp */
+#share-button {
+    position: fixed; /* Keep button in place */
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%); /* Center the button */
+    width: 60px; /* Adjust size */
+    height: 60px;
+    border-radius: 50%; /* Make it round */
+    background-color: #25D366; /* WhatsApp green */
+    color: white;
+    border: none;
+    font-size: 2.5rem; /* Large icon font size */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#share-button:hover {
+    background-color: #128C7E;
+}
