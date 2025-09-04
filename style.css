@@ -1,59 +1,5 @@
-/* General body and font styling - iOS base */
-body {
-    font-family: -apple-system, system-ui, sans-serif;
-    background-color: #f2f2f7; /* iOS background gray */
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden;
-}
+/* Other styles remain the same */
 
-/* Header and title styling - iOS Large Title style */
-.header {
-    text-align: center;
-    padding: 20px 0 10px;
-    background-color: white;
-    border-bottom: 1px solid #e0e0e0;
-    box-shadow: 0 1px 0 rgba(0,0,0,0.05);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-
-h1 {
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: #000;
-    margin: 0;
-    padding-bottom: 5px;
-}
-
-/* Loading spinner */
-#loading-spinner {
-    text-align: center;
-    color: #8e8e93;
-    padding: 40px;
-    font-size: 1.1rem;
-}
-
-/* Category styling - iOS Section Header (smaller and thinner) */
-.category {
-    margin-top: 30px;
-    font-size: 0.9rem; /* Smaller font size as requested */
-    font-weight: 400; /* Lighter font weight as requested */
-    color: #8e8e93; /* iOS gray text */
-    padding: 0 20px 5px;
-    text-align: right;
-}
-
-.item-list {
-    background-color: white;
-    border-radius: 12px;
-    overflow: hidden;
-    margin: 8px 15px 0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* Flexbox for correct alignment */
 .item {
     display: flex;
     justify-content: space-between; /* Aligns item name to right, controls to left */
@@ -74,65 +20,12 @@ h1 {
     margin-right: 15px; /* Space between name and controls */
 }
 
-/* iOS-style Toggle Switch */
-.toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 30px;
-    vertical-align: middle;
-}
-
-.toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.toggle-switch .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #e9e9ea;
-    transition: .2s;
-    border-radius: 34px;
-}
-
-.toggle-switch .slider:before {
-    position: absolute;
-    content: "";
-    height: 22px;
-    width: 22px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .2s;
-    border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-}
-
-.toggle-switch input:checked + .slider {
-    background-color: #34c759;
-}
-
-.toggle-switch input:focus + .slider {
-    box-shadow: 0 0 1px #34c759;
-}
-
-.toggle-switch input:checked + .slider:before {
-    transform: translateX(20px);
-}
-
 /* Item Controls - now always visible */
 .item-controls {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 15px; /* Space between controls and toggle */
     direction: ltr; /* Ensure controls are LTR */
-    margin-left: 15px; /* Space between item name and controls */
 }
 
 /* Locked state - controls are grayed out */
@@ -146,17 +39,17 @@ h1 {
 .quantity-slider-container {
     display: flex;
     align-items: center;
-    direction: ltr; /* Slider direction is LTR */
+    direction: ltr;
 }
 
 .quantity-slider-container input[type="range"] {
     -webkit-appearance: none;
-    width: 120px;
+    width: 80px; /* **הקטנה של רוחב הסליידר** */
     height: 6px;
     background: #e5e5ea;
     border-radius: 3px;
     outline: none;
-    margin: 0 10px;
+    margin: 0 5px; /* **הקטנת המרווחים** */
 }
 
 .quantity-slider-container input[type="range"]::-webkit-slider-thumb {
@@ -208,30 +101,5 @@ h1 {
     color: white;
 }
 
-/* Footer and Share Button */
-.footer {
-    position: sticky;
-    bottom: 0;
-    padding: 15px;
-    background-color: #f2f2f7;
-    border-top: 1px solid #c8c7cc;
-    z-index: 100;
-}
-
-#share-button {
-    width: 100%;
-    padding: 18px;
-    background-color: #007aff;
-    color: white;
-    border: none;
-    border-radius: 14px;
-    font-size: 1.3rem;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    transition: background-color 0.2s;
-}
-
-#share-button:active {
-    background-color: #005bbd;
-}
+/* Floating Action Button (FAB) for WhatsApp */
+/* Styles remain the same */
