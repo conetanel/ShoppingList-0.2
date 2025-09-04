@@ -89,12 +89,13 @@ function createItemElement(itemObj, category) {
         quantityButton.textContent = '1 יחידות';
         itemControlsDiv.appendChild(quantityButton);
         
-        const myPicker = mobiscroll.select('#' + itemObj.item.replace(/\s/g, ''), {
+        // Initialize the mobiscroll picker correctly
+        let quantityPicker = mobiscroll.select('#' + itemObj.item.replace(/\s/g, ''), {
             theme: 'ios',
             display: 'bottom',
-            data: Array.from({length: 10}, (_, i) => ({ value: i + 1, text: `${i + 1} יחידות` })),
+            data: Array.from({length: 10}, (_, i) => ({ value: `${i + 1} יחידות`, text: `${i + 1} יחידות` })),
             onInit: (event, inst) => {
-                inst.setVal(1);
+                inst.setVal('1 יחידות');
             },
             onChange: (event, inst) => {
                 quantityButton.textContent = inst.getVal();
@@ -103,6 +104,12 @@ function createItemElement(itemObj, category) {
                 }
             }
         });
+        
+        // This is the fix: link the button to the mobiscroll instance
+        quantityButton.addEventListener('click', () => {
+            quantityPicker.open();
+        });
+
 
     } else if (itemObj.type === 'גודל') {
         const sizeOptions = ['S', 'M', 'L'];
@@ -111,7 +118,7 @@ function createItemElement(itemObj, category) {
         sizeButton.textContent = 'S';
         itemControlsDiv.appendChild(sizeButton);
 
-        const myPicker = mobiscroll.select('#' + itemObj.item.replace(/\s/g, ''), {
+        let sizePicker = mobiscroll.select('#' + itemObj.item.replace(/\s/g, ''), {
             theme: 'ios',
             display: 'bottom',
             data: sizeOptions.map(size => ({ value: size, text: size })),
@@ -126,6 +133,11 @@ function createItemElement(itemObj, category) {
             }
         });
         
+        // This is the fix: link the button to the mobiscroll instance
+        sizeButton.addEventListener('click', () => {
+            sizePicker.open();
+        });
+
     } else {
         itemControlsDiv.style.display = 'none'; // No controls for regular items
     }
