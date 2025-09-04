@@ -12,7 +12,7 @@ async function fetchAndRenderList() {
         const response = await fetch(sheetURL);
         const text = await response.text();
         const json = JSON.parse(text.substr(47).slice(0, -2));
-        const rows = json.table.rows;
+        const rows = json.table.rows.slice(1); // Skip the header row
 
         const categorizedItems = {};
         
