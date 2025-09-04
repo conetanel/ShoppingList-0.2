@@ -77,11 +77,18 @@ function createItemElement(itemObj, category) {
     if (itemObj.type === 'כמות') {
         const sliderContainer = document.createElement('div');
         sliderContainer.className = 'quantity-slider-container control';
-        sliderContainer.innerHTML = `<span class="slider-value">1</span><input type="range" min="1" max="10" value="1">`;
-        itemControlsDiv.appendChild(sliderContainer);
+        const sliderValue = document.createElement('span');
+        sliderValue.className = 'slider-value';
+        sliderValue.textContent = '1';
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = '1';
+        slider.max = '10';
+        slider.value = '1';
         
-        const slider = sliderContainer.querySelector('input');
-        const sliderValue = sliderContainer.querySelector('.slider-value');
+        sliderContainer.appendChild(sliderValue);
+        sliderContainer.appendChild(slider);
+        itemControlsDiv.appendChild(sliderContainer);
         
         slider.addEventListener('input', (e) => {
             sliderValue.textContent = e.target.value;
