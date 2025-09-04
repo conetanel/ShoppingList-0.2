@@ -55,11 +55,11 @@ h1 {
 
 .item {
     display: flex;
-    justify-content: space-between; /* Align content to start and end */
+    justify-content: space-between;
     align-items: center;
     padding: 12px 20px;
     border-bottom: 0.5px solid #e0e0e0;
-    direction: rtl; /* Ensure proper RTL layout */
+    direction: rtl;
 }
 .item:last-child {
     border-bottom: none;
@@ -70,7 +70,7 @@ h1 {
     font-size: 1.1rem;
     color: #000;
     text-align: right;
-    margin-right: 15px; /* Add some space between name and controls */
+    margin-right: 15px;
 }
 
 /* iOS-style Toggle Switch */
@@ -97,7 +97,6 @@ h1 {
     right: 0;
     bottom: 0;
     background-color: #e9e9ea;
-    -webkit-transition: .2s;
     transition: .2s;
     border-radius: 34px;
 }
@@ -110,7 +109,6 @@ h1 {
     left: 4px;
     bottom: 4px;
     background-color: white;
-    -webkit-transition: .2s;
     transition: .2s;
     border-radius: 50%;
     box-shadow: 0 1px 3px rgba(0,0,0,0.4);
@@ -120,13 +118,7 @@ h1 {
     background-color: #34c759;
 }
 
-.toggle-switch input:focus + .slider {
-    box-shadow: 0 0 1px #34c759;
-}
-
 .toggle-switch input:checked + .slider:before {
-    -webkit-transform: translateX(20px);
-    -ms-transform: translateX(20px);
     transform: translateX(20px);
 }
 
@@ -137,21 +129,89 @@ h1 {
     gap: 10px;
 }
 
-.item-controls.locked .picker-button {
+.item-controls.locked .picker-display {
     pointer-events: none;
     opacity: 0.5; /* Visual cue for locked state */
+    color: #8e8e93; /* Gray out text */
 }
 
-/* New picker button styling to simulate a text field */
-.picker-button {
+/* Picker Display styling to look like an iOS text field */
+.picker-display {
     font-size: 1.1rem;
     font-weight: 500;
-    color: #007aff;
-    background-color: transparent;
-    border: none;
-    padding: 0 10px;
+    color: #000;
+    text-align: center;
+    min-width: 60px;
+    padding: 0 5px;
+    direction: ltr; /* Ensure numbers and text display correctly */
     cursor: pointer;
-    direction: rtl; /* For text inside button */
+    position: relative;
+}
+
+/* Quantity Slider (iOS style) */
+.quantity-slider-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    direction: ltr;
+}
+
+.quantity-slider-container input[type="range"] {
+    -webkit-appearance: none;
+    width: 120px;
+    height: 6px;
+    background: #e5e5ea;
+    border-radius: 3px;
+    outline: none;
+    margin: 0;
+}
+
+.quantity-slider-container input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    background: white;
+    border-radius: 50%;
+    cursor: grab;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    border: none;
+}
+
+.quantity-slider-container .slider-value {
+    font-weight: 500;
+    color: #000;
+    font-size: 1.1rem;
+    min-width: 25px;
+    text-align: left;
+}
+
+/* Size Buttons (iOS Segmented Control style) */
+.size-buttons-container {
+    display: inline-flex;
+    border: 1px solid #007aff;
+    border-radius: 8px;
+    overflow: hidden;
+    direction: rtl;
+}
+
+.size-button {
+    background-color: white;
+    color: #007aff;
+    border: none;
+    padding: 8px 15px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-left: 1px solid #007aff;
+}
+.size-button:first-child {
+    border-left: none;
+}
+
+.size-button.active {
+    background-color: #007aff;
+    color: white;
 }
 
 /* Footer and Share Button */
