@@ -44,19 +44,19 @@
 
 .quantity-slider-container input[type="range"] {
     -webkit-appearance: none;
-    width: 80px; /* **הקטנה של רוחב הסליידר** */
+    width: 60px; /* **רוחב קומפקטי במיוחד** */
     height: 6px;
     background: #e5e5ea;
     border-radius: 3px;
     outline: none;
-    margin: 0 5px; /* **הקטנת המרווחים** */
+    margin: 0; /* **הסרת מרווחים פנימיים** */
 }
 
 .quantity-slider-container input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 28px;
-    height: 28px;
+    width: 24px; /* **הקטנת גודל הכפתור העגול** */
+    height: 24px;
     background: white;
     border-radius: 50%;
     cursor: grab;
@@ -67,10 +67,11 @@
 .quantity-slider-container .slider-value {
     font-weight: 500;
     color: #000;
-    font-size: 1.1rem;
+    font-size: 1rem;
     min-width: 25px;
     text-align: left;
     direction: rtl; /* For "יחידות" etc. */
+    margin-right: 5px; /* Space between value and slider */
 }
 
 /* Size Buttons (iOS Segmented Control style) */
@@ -83,23 +84,4 @@
 }
 
 .size-button {
-    background-color: white;
-    color: #007aff;
-    border: none;
-    padding: 8px 15px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    cursor: pointer;
-    border-left: 1px solid #007aff;
-}
-.size-button:first-child {
-    border-left: none;
-}
-
-.size-button.active {
-    background-color: #007aff;
-    color: white;
-}
-
-/* Floating Action Button (FAB) for WhatsApp */
-/* Styles remain the same */
+    background-color:
