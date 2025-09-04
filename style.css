@@ -56,29 +56,29 @@ h1 {
 /* Flexbox for correct alignment */
 .item {
     display: flex;
-    justify-content: space-between; /* Aligns item name to right, controls to left */
+    justify-content: space-between;
     align-items: center;
     padding: 12px 20px;
     border-bottom: 0.5px solid #e0e0e0;
-    direction: rtl; /* Sets the base direction for the line */
+    direction: rtl;
 }
 .item:last-child {
     border-bottom: none;
 }
 
 .item-name {
-    flex-grow: 1; /* Item name takes available space */
+    flex-grow: 1;
     font-size: 1.1rem;
     color: #000;
     text-align: right;
-    margin-right: 15px; /* Space between name and controls */
+    margin-right: 15px;
 }
 
 /* Item Controls - now always visible */
 .item-controls {
     display: flex;
     align-items: center;
-    gap: 15px; /* Space between controls and toggle */
+    gap: 15px;
     direction: ltr; /* Ensure controls are LTR */
 }
 
@@ -94,7 +94,6 @@ h1 {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    direction: ltr;
 }
 
 .quantity-stepper-container button {
@@ -206,7 +205,7 @@ h1 {
 #share-button {
     position: fixed;
     bottom: 20px;
-    left: 20px; /* Aligned to the left */
+    left: 20px;
     width: 60px;
     height: 60px;
     border-radius: 50%;
