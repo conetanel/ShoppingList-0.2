@@ -8,7 +8,7 @@ const loadingSpinner = document.getElementById('loading-spinner');
 let shoppingList = {};
 
 // --- נתוני דמה לפיתוח מקומי ---
-const isMockMode = false; // שנה ל-false כדי לחזור לקריאה מגוגל שיטס
+const isMockMode = true; // שנה ל-false כדי לחזור לקריאה מגוגל שיטס
 
 const mockData = {
     "מטבח": [
@@ -112,6 +112,18 @@ function createItemElement(itemObj, category) {
     const itemControlsDiv = document.createElement('div');
     itemControlsDiv.className = 'item-controls locked'; // Start locked
     
+    // Create iOS-style toggle switch
+    const toggleSwitchContainer = document.createElement('label');
+    toggleSwitchContainer.className = 'toggle-switch';
+    const toggleInput = document.createElement('input');
+    toggleInput.type = 'checkbox';
+    toggleInput.checked = false;
+    const toggleSlider = document.createElement('span');
+    toggleSlider.className = 'slider round';
+    toggleSwitchContainer.appendChild(toggleInput);
+    toggleSwitchContainer.appendChild(toggleSlider);
+    itemControlsDiv.appendChild(toggleSwitchContainer); // Add switch first
+    
     if (itemObj.type === 'כמות') {
         const stepperContainer = document.createElement('div');
         stepperContainer.className = 'quantity-stepper-container control';
@@ -168,20 +180,8 @@ function createItemElement(itemObj, category) {
         itemControlsDiv.appendChild(sizeButtonsContainer);
         sizeButtonsContainer.querySelector('.size-button:first-child').classList.add('active');
     }
-    
-    // Create iOS-style toggle switch
-    const toggleSwitchContainer = document.createElement('label');
-    toggleSwitchContainer.className = 'toggle-switch';
-    const toggleInput = document.createElement('input');
-    toggleInput.type = 'checkbox';
-    toggleInput.checked = false;
-    const toggleSlider = document.createElement('span');
-    toggleSlider.className = 'slider round';
-    toggleSwitchContainer.appendChild(toggleInput);
-    toggleSwitchContainer.appendChild(toggleSlider);
 
     itemDiv.appendChild(itemControlsDiv);
-    itemDiv.appendChild(toggleSwitchContainer);
 
     toggleInput.addEventListener('change', (e) => {
         if (e.target.checked) {
