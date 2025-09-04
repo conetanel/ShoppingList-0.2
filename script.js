@@ -1,183 +1,139 @@
-const SHEET_ID = '11OxjXpAo3vWnzJFG738M8FjelkK1vBM09dHzYf78Ubs'; // Replace with your Sheet ID
-const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;`;
+/* Other styles remain the same */
 
-const container = document.getElementById('shopping-list-container');
-const shareButton = document.getElementById('share-button');
-const loadingSpinner = document.getElementById('loading-spinner');
-
-let shoppingList = {};
-
-async function fetchAndRenderList() {
-    try {
-        const response = await fetch(sheetURL);
-        const text = await response.text();
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        const rows = json.table.rows.slice(1); // Skip the header row
-
-        const categorizedItems = {};
-        
-        // Group items by category and store their type
-        rows.forEach(row => {
-            const cells = row.c;
-            if (cells.length < 3) return; // Skip incomplete rows
-            
-            const category = cells[0]?.v;
-            const item = cells[1]?.v;
-            const type = cells[2]?.v;
-
-            if (category && item) {
-                if (!categorizedItems[category]) {
-                    categorizedItems[category] = [];
-                }
-                categorizedItems[category].push({ item, type });
-            }
-        });
-
-        renderList(categorizedItems);
-        loadingSpinner.style.display = 'none';
-
-    } catch (err) {
-        loadingSpinner.textContent = '❌ שגיאה בטעינת הנתונים.';
-        console.error(err);
-    }
+/* Flexbox for correct alignment */
+.item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 0.5px solid #e0e0e0;
+    direction: rtl; /* Sets the base direction for the line */
+}
+.item:last-child {
+    border-bottom: none;
 }
 
-function renderList(categorizedItems) {
-    container.innerHTML = '';
-    for (const category in categorizedItems) {
-        const categoryDiv = document.createElement('div');
-        categoryDiv.className = 'category';
-        categoryDiv.textContent = category;
-        container.appendChild(categoryDiv);
-
-        const list = document.createElement('div');
-        list.className = 'item-list';
-        categorizedItems[category].forEach(itemObj => {
-            const itemElement = createItemElement(itemObj, category);
-            list.appendChild(itemElement);
-        });
-        container.appendChild(list);
-    }
+.item-name {
+    flex-grow: 1; /* Item name takes available space */
+    font-size: 1.1rem;
+    color: #000;
+    text-align: right;
+    margin-right: 15px; /* Space between name and controls */
 }
 
-function createItemElement(itemObj, category) {
-    const itemDiv = document.createElement('div');
-    itemDiv.className = 'item';
-
-    // Create item name
-    const itemNameSpan = document.createElement('span');
-    itemNameSpan.textContent = itemObj.item;
-    itemNameSpan.className = 'item-name';
-
-    itemDiv.appendChild(itemNameSpan);
-
-    const controlsAndToggle = document.createElement('div');
-    controlsAndToggle.className = 'controls-and-toggle';
-    controlsAndToggle.style.display = 'flex';
-    controlsAndToggle.style.alignItems = 'center';
-
-    const itemControlsDiv = document.createElement('div');
-    itemControlsDiv.className = 'item-controls locked';
-
-    if (itemObj.type === 'כמות') {
-        const sliderContainer = document.createElement('div');
-        sliderContainer.className = 'quantity-slider-container control';
-        sliderContainer.innerHTML = `<input type="range" min="1" max="10" value="1"><span class="slider-value">1</span>`;
-        itemControlsDiv.appendChild(sliderContainer);
-        
-        const slider = sliderContainer.querySelector('input');
-        const sliderValue = sliderContainer.querySelector('.slider-value');
-        
-        slider.addEventListener('input', (e) => {
-            sliderValue.textContent = e.target.value;
-            if (toggleInput.checked) {
-                shoppingList[itemObj.item] = { category, quantity: `${e.target.value} יחידות` };
-            }
-        });
-    } else if (itemObj.type === 'גודל') {
-        const sizeOptions = ['S', 'M', 'L'];
-        const sizeButtonsContainer = document.createElement('div');
-        sizeButtonsContainer.className = 'size-buttons-container control';
-        sizeOptions.forEach(size => {
-            const button = document.createElement('button');
-            button.className = 'size-button';
-            button.textContent = size;
-            button.addEventListener('click', () => {
-                sizeButtonsContainer.querySelectorAll('.size-button').forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                if (toggleInput.checked) {
-                    shoppingList[itemObj.item] = { category, size };
-                }
-            });
-            sizeButtonsContainer.appendChild(button);
-        });
-        itemControlsDiv.appendChild(sizeButtonsContainer);
-        sizeButtonsContainer.querySelector('.size-button:first-child').classList.add('active');
-    }
-    
-    // Create iOS-style toggle switch
-    const toggleSwitchContainer = document.createElement('label');
-    toggleSwitchContainer.className = 'toggle-switch';
-    const toggleInput = document.createElement('input');
-    toggleInput.type = 'checkbox';
-    toggleInput.checked = false;
-    const toggleSlider = document.createElement('span');
-    toggleSlider.className = 'slider round';
-    toggleSwitchContainer.appendChild(toggleInput);
-    toggleSwitchContainer.appendChild(toggleSlider);
-
-    // Append controls and toggle to a new container for correct layout
-    controlsAndToggle.appendChild(itemControlsDiv);
-    controlsAndToggle.appendChild(toggleSwitchContainer);
-    itemDiv.appendChild(controlsAndToggle);
-
-    toggleInput.addEventListener('change', (e) => {
-        if (e.target.checked) {
-            itemControlsDiv.classList.remove('locked');
-            if (itemObj.type === 'כמות') {
-                const sliderValue = itemControlsDiv.querySelector('.slider-value').textContent;
-                shoppingList[itemObj.item] = { category, quantity: `${sliderValue} יחידות` };
-            } else if (itemObj.type === 'גודל') {
-                const activeSizeButton = itemControlsDiv.querySelector('.size-button.active');
-                shoppingList[itemObj.item] = { category, size: activeSizeButton ? activeSizeButton.textContent : 'S' };
-            } else {
-                shoppingList[itemObj.item] = { category };
-            }
-        } else {
-            itemControlsDiv.classList.add('locked');
-            delete shoppingList[itemObj.item];
-        }
-    });
-
-    return itemDiv;
+/* New container for controls and toggle to keep them together */
+.controls-container {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Space between controls and toggle */
+    direction: ltr; /* Ensure LTR for the controls section */
 }
 
-shareButton.addEventListener('click', () => {
-    let message = "📋 רשימת קניות:\n\n";
-    const categories = {};
+/* Item Controls - now always visible */
+.item-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-    for (const item in shoppingList) {
-        const data = shoppingList[item];
-        if (!categories[data.category]) {
-            categories[data.category] = [];
-        }
-        let itemText = `• ${item}`;
-        if (data.quantity) {
-            itemText += ` (${data.quantity})`;
-        } else if (data.size) {
-            itemText += ` (${data.size})`;
-        }
-        categories[data.category].push(itemText);
-    }
+/* Locked state - controls are grayed out */
+.item-controls.locked .control {
+    pointer-events: none;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
 
-    for (const cat in categories) {
-        message += `${cat}\n`;
-        message += categories[cat].join('\n') + '\n\n';
-    }
+/* Quantity Slider (iOS style) */
+.quantity-slider-container {
+    display: flex;
+    align-items: center;
+    direction: ltr;
+}
 
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
-});
+.quantity-slider-container input[type="range"] {
+    -webkit-appearance: none;
+    width: 120px;
+    height: 6px;
+    background: #e5e5ea;
+    border-radius: 3px;
+    outline: none;
+    margin: 0 10px;
+}
 
-// Initial fetch on page load
-fetchAndRenderList();
+.quantity-slider-container input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    background: white;
+    border-radius: 50%;
+    cursor: grab;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    border: none;
+}
+
+.quantity-slider-container .slider-value {
+    font-weight: 500;
+    color: #000;
+    font-size: 1.1rem;
+    min-width: 25px;
+    text-align: left;
+    direction: rtl; /* For "יחידות" etc. */
+}
+
+/* Size Buttons (iOS Segmented Control style) */
+.size-buttons-container {
+    display: inline-flex;
+    border: 1px solid #007aff;
+    border-radius: 8px;
+    overflow: hidden;
+    direction: ltr;
+}
+
+.size-button {
+    background-color: white;
+    color: #007aff;
+    border: none;
+    padding: 8px 15px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-left: 1px solid #007aff;
+}
+.size-button:first-child {
+    border-left: none;
+}
+
+.size-button.active {
+    background-color: #007aff;
+    color: white;
+}
+
+/* Floating Action Button (FAB) for WhatsApp */
+#share-button {
+    position: fixed; /* Keep button in place */
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%); /* Center the button */
+    width: 60px; /* Adjust size */
+    height: 60px;
+    border-radius: 50%; /* Make it round */
+    background-color: #25D366; /* WhatsApp green */
+    color: white;
+    border: none;
+    font-size: 2.5rem; /* Large icon font size */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#share-button:hover {
+    background-color: #128C7E;
+}
+.fab-icon {
+    font-family: 'Font Awesome 5 Brands'; /* Or any other icon font */
+    font-weight: 900;
+    content: '\f232'; /* WhatsApp icon */
+}
