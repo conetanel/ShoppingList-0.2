@@ -63,7 +63,7 @@ function renderList(categorizedItems) {
 function createItemElement(itemObj, category) {
     const itemDiv = document.createElement('div');
     itemDiv.className = 'item';
-
+    
     // Create item name
     const itemNameSpan = document.createElement('span');
     itemNameSpan.textContent = itemObj.item;
@@ -71,18 +71,13 @@ function createItemElement(itemObj, category) {
 
     itemDiv.appendChild(itemNameSpan);
 
-    const controlsAndToggle = document.createElement('div');
-    controlsAndToggle.className = 'controls-and-toggle';
-    controlsAndToggle.style.display = 'flex';
-    controlsAndToggle.style.alignItems = 'center';
-
     const itemControlsDiv = document.createElement('div');
     itemControlsDiv.className = 'item-controls locked';
 
     if (itemObj.type === 'כמות') {
         const sliderContainer = document.createElement('div');
         sliderContainer.className = 'quantity-slider-container control';
-        sliderContainer.innerHTML = `<input type="range" min="1" max="10" value="1"><span class="slider-value">1</span>`;
+        sliderContainer.innerHTML = `<span class="slider-value">1</span><input type="range" min="1" max="10" value="1">`;
         itemControlsDiv.appendChild(sliderContainer);
         
         const slider = sliderContainer.querySelector('input');
@@ -126,10 +121,8 @@ function createItemElement(itemObj, category) {
     toggleSwitchContainer.appendChild(toggleInput);
     toggleSwitchContainer.appendChild(toggleSlider);
 
-    // Append controls and toggle to a new container for correct layout
-    controlsAndToggle.appendChild(itemControlsDiv);
-    controlsAndToggle.appendChild(toggleSwitchContainer);
-    itemDiv.appendChild(controlsAndToggle);
+    itemDiv.appendChild(itemControlsDiv);
+    itemDiv.appendChild(toggleSwitchContainer);
 
     toggleInput.addEventListener('change', (e) => {
         if (e.target.checked) {
