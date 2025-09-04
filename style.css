@@ -1,4 +1,3 @@
-CSS:
 /* General body and font styling - iOS base */
 body {
     font-family: -apple-system, system-ui, sans-serif;
@@ -11,18 +10,18 @@ body {
 /* Header and title styling - iOS Large Title style */
 .header {
     text-align: center;
-    padding: 20px 0 10px; /* Adjusted padding */
+    padding: 20px 0 10px;
     background-color: white;
-    border-bottom: 1px solid #e0e0e0; /* Subtle separator */
-    box-shadow: 0 1px 0 rgba(0,0,0,0.05); /* Soft shadow */
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.05);
     position: sticky;
     top: 0;
     z-index: 100;
 }
 
 h1 {
-    font-size: 2.2rem; /* Larger iOS title */
-    font-weight: 700; /* Bold */
+    font-size: 2.2rem;
+    font-weight: 700;
     color: #000;
     margin: 0;
     padding-bottom: 5px;
@@ -36,160 +35,103 @@ h1 {
     font-size: 1.1rem;
 }
 
-/* Category styling - iOS Section Header */
+/* Category styling - iOS Section Header (smaller and thinner) */
 .category {
-    margin-top: 30px; /* More space above category */
-    font-size: 1.1rem;
-    font-weight: 600;
+    margin-top: 30px;
+    font-size: 0.9rem; /* Smaller font size as requested */
+    font-weight: 400; /* Lighter font weight as requested */
     color: #8e8e93; /* iOS gray text */
-    padding: 0 20px 5px; /* Padding for category text */
-    text-align: right; /* RTL support */
+    padding: 0 20px 5px;
+    text-align: right;
 }
 
 .item-list {
     background-color: white;
-    border-radius: 12px; /* Rounded corners for the entire list block */
+    border-radius: 12px;
     overflow: hidden;
-    margin: 8px 15px 0; /* Margin from sides */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    margin: 8px 15px 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+/* Flexbox for correct alignment */
 .item {
     display: flex;
-    flex-wrap: wrap; /* Allow controls to wrap to next line if needed */
-    justify-content: space-between;
+    justify-content: space-between; /* Aligns item name to right, controls to left */
     align-items: center;
-    padding: 12px 20px; /* Slightly reduced padding */
-    border-bottom: 0.5px solid #e0e0e0; /* Finer border for iOS feel */
+    padding: 12px 20px;
+    border-bottom: 0.5px solid #e0e0e0;
+    direction: rtl; /* Sets the base direction for the line */
 }
 .item:last-child {
-    border-bottom: none; /* No border for the last item in a list */
+    border-bottom: none;
 }
 
 .item-name {
     flex-grow: 1; /* Item name takes available space */
     font-size: 1.1rem;
     color: #000;
-    margin-right: 15px; /* Space between name and controls */
     text-align: right;
+    margin-right: 15px; /* Space between name and controls */
 }
 
-/* iOS-style Toggle Switch */
-.toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 50px; /* Standard iOS switch width */
-    height: 30px; /* Standard iOS switch height */
-    vertical-align: middle;
-}
-
-.toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.toggle-switch .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #e9e9ea; /* Default off color */
-    -webkit-transition: .2s;
-    transition: .2s;
-    border-radius: 34px; /* Pill shape */
-}
-
-.toggle-switch .slider:before {
-    position: absolute;
-    content: "";
-    height: 22px; /* Knob size */
-    width: 22px; /* Knob size */
-    left: 4px; /* Initial position */
-    bottom: 4px;
-    background-color: white;
-    -webkit-transition: .2s;
-    transition: .2s;
-    border-radius: 50%; /* Round knob */
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4); /* Knob shadow */
-}
-
-.toggle-switch input:checked + .slider {
-    background-color: #34c759; /* iOS green on color */
-}
-
-.toggle-switch input:focus + .slider {
-    box-shadow: 0 0 1px #34c759;
-}
-
-.toggle-switch input:checked + .slider:before {
-    -webkit-transform: translateX(20px); /* Move knob to right */
-    -ms-transform: translateX(20px);
-    transform: translateX(20px);
-}
-
-/* Item Controls - flex for alignment */
+/* Item Controls - now always visible */
 .item-controls {
     display: flex;
     align-items: center;
-    gap: 10px; /* Space between controls if multiple */
-    margin-top: 5px; /* Little space from item name */
-    width: 100%; /* Take full width on next line */
-    justify-content: flex-end; /* Align to right */
-    padding-top: 5px; /* Space from top elements */
-    border-top: 0.5px solid #f2f2f7; /* Subtle internal separator */
+    gap: 15px; /* Space between controls and toggle */
+    direction: ltr; /* Ensure controls are LTR */
 }
 
-/* Quantity Slider (iOS style) */
-.quantity-slider-container {
+/* Locked state - controls are grayed out */
+.item-controls.locked .control {
+    pointer-events: none;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+/* Quantity Stepper (New iOS style) */
+.quantity-stepper-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    direction: ltr;
+}
+
+.quantity-stepper-container button {
+    background-color: #f0f0f0;
+    border: 1px solid #dcdcdc;
+    color: #007aff;
+    font-size: 1.5rem;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
     display: flex;
     align-items: center;
-    justify-content: flex-end; /* Align right within controls */
-    flex-grow: 1; /* Take more space */
-    direction: ltr; /* Slider direction is LTR */
-    padding-left: 10px;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+.quantity-stepper-container button:active {
+    background-color: #dcdcdc;
 }
 
-.quantity-slider-container input[type="range"] {
-    -webkit-appearance: none;
-    width: 120px; /* Adjusted width */
-    height: 6px; /* Thinner track */
-    background: #e5e5ea; /* iOS gray track */
-    border-radius: 3px;
-    outline: none;
-    margin: 0 10px;
-}
-
-.quantity-slider-container input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 28px; /* Slightly larger thumb */
-    height: 28px;
-    background: white;
-    border-radius: 50%;
-    cursor: grab; /* More indicative cursor */
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4); /* iOS thumb shadow */
-    border: none; /* No extra border */
-}
-
-.quantity-slider-container .slider-value {
-    font-weight: 500;
-    color: #000; /* Black for value */
+.quantity-stepper-container .stepper-value {
     font-size: 1.1rem;
-    min-width: 25px; /* Ensure space for two digits */
-    text-align: left; /* Align value to left of slider */
-    direction: rtl; /* For "יחידות" etc. */
+    font-weight: 500;
+    min-width: 30px;
+    text-align: center;
+    color: #000;
 }
 
 /* Size Buttons (iOS Segmented Control style) */
 .size-buttons-container {
     display: inline-flex;
-    border: 1px solid #007aff; /* iOS blue border */
-    border-radius: 8px; /* Rounded corners */
+    border: 1px solid #007aff;
+    border-radius: 8px;
     overflow: hidden;
-    direction: rtl; /* Buttons themselves are LTR but container is RTL */
+    direction: ltr;
 }
 
 .size-button {
@@ -200,42 +142,85 @@ h1 {
     font-size: 0.95rem;
     font-weight: 500;
     cursor: pointer;
-    border-left: 1px solid #007aff; /* Separator between buttons */
+    border-left: 1px solid #007aff;
 }
-.size-button:last-child {
-    border-left: none; /* No border on the last button */
+.size-button:first-child {
+    border-left: none;
 }
 
 .size-button.active {
-    background-color: #007aff; /* Blue background when active */
+    background-color: #007aff;
     color: white;
 }
 
-/* Footer and Share Button */
-.footer {
-    position: sticky;
+/* iOS-style Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 30px;
+}
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.toggle-switch .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
     bottom: 0;
-    padding: 15px;
-    background-color: #f2f2f7;
-    border-top: 1px solid #c8c7cc;
-    z-index: 100;
+    background-color: #e9e9ea;
+    -webkit-transition: .2s;
+    transition: .2s;
+    border-radius: 34px;
+}
+.toggle-switch .slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .2s;
+    transition: .2s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.toggle-switch input:checked + .slider {
+    background-color: #34c759;
+}
+.toggle-switch input:focus + .slider {
+    box-shadow: 0 0 1px #34c759;
+}
+.toggle-switch input:checked + .slider:before {
+    -webkit-transform: translateX(20px);
+    -ms-transform: translateX(20px);
+    transform: translateX(20px);
 }
 
+/* Floating Action Button (FAB) for Share */
 #share-button {
-    width: 100%;
-    padding: 18px; /* Larger button */
-    background-color: #007aff; /* iOS blue */
+    position: fixed;
+    bottom: 20px;
+    left: 20px; /* Aligned to the left */
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #007aff;
     color: white;
     border: none;
-    border-radius: 14px; /* More rounded iOS button */
-    font-size: 1.3rem; /* Larger text */
-    font-weight: 600;
+    font-size: 1.8rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Soft button shadow */
-    transition: background-color 0.2s;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-
-#share-button:active {
-    background-color: #005bbd; /* Darker blue on press */
+#share-button:hover {
+    background-color: #005bbd;
 }
-
