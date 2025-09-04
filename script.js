@@ -68,37 +68,28 @@ function createItemElement(itemObj, category) {
     const itemNameSpan = document.createElement('span');
     itemNameSpan.textContent = itemObj.item;
     itemNameSpan.className = 'item-name';
+
     itemDiv.appendChild(itemNameSpan);
 
-    // Create iOS-style toggle switch
-    const toggleSwitchContainer = document.createElement('label');
-    toggleSwitchContainer.className = 'toggle-switch';
-    const toggleInput = document.createElement('input');
-    toggleInput.type = 'checkbox';
-    toggleInput.checked = false;
-    const toggleSlider = document.createElement('span');
-    toggleSlider.className = 'slider round';
-    toggleSwitchContainer.appendChild(toggleInput);
-    toggleSwitchContainer.appendChild(toggleSlider);
-    itemDiv.appendChild(toggleSwitchContainer);
-    
-    // Create controls that will be conditionally displayed
+    const controlsAndToggle = document.createElement('div');
+    controlsAndToggle.className = 'controls-and-toggle';
+    controlsAndToggle.style.display = 'flex';
+    controlsAndToggle.style.alignItems = 'center';
+
     const itemControlsDiv = document.createElement('div');
-    itemControlsDiv.className = 'item-controls';
+    itemControlsDiv.className = 'item-controls locked';
 
     if (itemObj.type === 'כמות') {
-        // Dropdown for quantity
-        const quantitySelect = document.createElement('select');
-        quantitySelect.className = 'quantity-dropdown';
-        for (let i = 1; i <= 10; i++) {
-            const option = document.createElement('option');
-            option.value = i;
-            option.textContent = `${i} יחידות`;
-            quantitySelect.appendChild(option);
-        }
-        itemControlsDiv.appendChild(quantitySelect);
+        const sliderContainer = document.createElement('div');
+        sliderContainer.className = 'quantity-slider-container control';
+        sliderContainer.innerHTML = `<input type="range" min="1" max="10" value="1"><span class="slider-value">1</span>`;
+        itemControlsDiv.appendChild(sliderContainer);
         
-        quantitySelect.addEventListener('change', (e) => {
+        const slider = sliderContainer.querySelector('input');
+        const sliderValue = sliderContainer.querySelector('.slider-value');
+        
+        slider.addEventListener('input', (e) => {
+            sliderValue.textContent = e.target.value;
             if (toggleInput.checked) {
                 shoppingList[itemObj.item] = { category, quantity: `${e.target.value} יחידות` };
             }
@@ -106,7 +97,7 @@ function createItemElement(itemObj, category) {
     } else if (itemObj.type === 'גודל') {
         const sizeOptions = ['S', 'M', 'L'];
         const sizeButtonsContainer = document.createElement('div');
-        sizeButtonsContainer.className = 'size-buttons-container';
+        sizeButtonsContainer.className = 'size-buttons-container control';
         sizeOptions.forEach(size => {
             const button = document.createElement('button');
             button.className = 'size-button';
@@ -121,29 +112,39 @@ function createItemElement(itemObj, category) {
             sizeButtonsContainer.appendChild(button);
         });
         itemControlsDiv.appendChild(sizeButtonsContainer);
-        // Set default active state
         sizeButtonsContainer.querySelector('.size-button:first-child').classList.add('active');
     }
     
-    // Append the controls to the main item div
-    itemDiv.appendChild(itemControlsDiv);
+    // Create iOS-style toggle switch
+    const toggleSwitchContainer = document.createElement('label');
+    toggleSwitchContainer.className = 'toggle-switch';
+    const toggleInput = document.createElement('input');
+    toggleInput.type = 'checkbox';
+    toggleInput.checked = false;
+    const toggleSlider = document.createElement('span');
+    toggleSlider.className = 'slider round';
+    toggleSwitchContainer.appendChild(toggleInput);
+    toggleSwitchContainer.appendChild(toggleSlider);
 
-    // Event listener for the toggle switch
+    // Append controls and toggle to a new container for correct layout
+    controlsAndToggle.appendChild(itemControlsDiv);
+    controlsAndToggle.appendChild(toggleSwitchContainer);
+    itemDiv.appendChild(controlsAndToggle);
+
     toggleInput.addEventListener('change', (e) => {
         if (e.target.checked) {
-            itemControlsDiv.classList.add('visible');
+            itemControlsDiv.classList.remove('locked');
             if (itemObj.type === 'כמות') {
-                const quantitySelect = itemControlsDiv.querySelector('.quantity-dropdown');
-                shoppingList[itemObj.item] = { category, quantity: `${quantitySelect.value} יחידות` };
+                const sliderValue = itemControlsDiv.querySelector('.slider-value').textContent;
+                shoppingList[itemObj.item] = { category, quantity: `${sliderValue} יחידות` };
             } else if (itemObj.type === 'גודל') {
                 const activeSizeButton = itemControlsDiv.querySelector('.size-button.active');
                 shoppingList[itemObj.item] = { category, size: activeSizeButton ? activeSizeButton.textContent : 'S' };
             } else {
-                // Regular item with no controls
                 shoppingList[itemObj.item] = { category };
             }
         } else {
-            itemControlsDiv.classList.remove('visible');
+            itemControlsDiv.classList.add('locked');
             delete shoppingList[itemObj.item];
         }
     });
