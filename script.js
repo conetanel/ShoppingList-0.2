@@ -8,7 +8,7 @@ const loadingSpinner = document.getElementById('loading-spinner');
 let shoppingList = {};
 
 // --- נתוני דמה לפיתוח מקומי ---
-const isMockMode = true; // שנה ל-false כדי לחזור לקריאה מגוגל שיטס
+const isMockMode = false; // שנה ל-false כדי לחזור לקריאה מגוגל שיטס
 
 const mockData = {
     "מטבח": [
