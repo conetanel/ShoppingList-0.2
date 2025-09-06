@@ -1,30 +1,36 @@
-/* General body and font styling - iOS base */
+/* General body and font styling */
 body {
     font-family: -apple-system, system-ui, sans-serif;
-    background-color: #f2f2f7; /* iOS background gray */
+    background-color: #F2F4F7;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
 }
 
-/* Header and title styling - iOS Large Title style */
+/* Header and title styling */
 .header {
-    text-align: center;
-    padding: 20px 0 10px;
-    background-color: white;
-    border-bottom: 1px solid #e0e0e0;
-    box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+    display: flex; /* הוספנו display: flex כדי ליישר את האלמנטים */
+    justify-content: space-between; /* מרחיק את הכותרת מהאייקון */
+    align-items: center; /* מיישר את האלמנטים אנכית */
+    padding: 20px;
+    background-color: #F2F4F7; /* שינינו את הרקע לשקוף כדי שלא יראה צף */
     position: sticky;
     top: 0;
     z-index: 100;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* צל קטן כדי שיבלוט בזמן גלילה */
 }
 
-h1 {
-    font-size: 2.2rem;
-    font-weight: 700;
+.header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
     color: #000;
     margin: 0;
-    padding-bottom: 5px;
+}
+
+#share-icon {
+    font-size: 1.5rem;
+    color: #007aff;
+    cursor: pointer;
 }
 
 /* Loading spinner */
@@ -35,25 +41,30 @@ h1 {
     font-size: 1.1rem;
 }
 
-/* Category styling - iOS Section Header (smaller and thinner) */
+/* Shopping list container */
+#shopping-list-container {
+    padding: 0 15px;
+}
+
+/* Category styling */
 .category {
     margin-top: 30px;
-    font-size: 0.9rem; /* Smaller font size as requested */
-    font-weight: 400; /* Lighter font weight as requested */
-    color: #8e8e93; /* iOS gray text */
-    padding: 0 20px 5px;
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: #8e8e93;
+    padding: 0 5px 5px;
     text-align: right;
 }
 
-.item-list {
-    background-color: white;
-    border-radius: 12px;
+/* Card for each category - with rounded corners */
+.item-card {
+    background-color: white; /* רקע לבן לכרטיסייה */
+    border-radius: 12px; /* פינות מעוגלות */
     overflow: hidden;
-    margin: 8px 15px 0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-top: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* צל עדין */
 }
 
-/* Flexbox for correct alignment */
 .item {
     display: flex;
     justify-content: space-between;
@@ -79,7 +90,7 @@ h1 {
     display: flex;
     align-items: center;
     gap: 15px;
-    direction: ltr; /* Ensure controls are LTR */
+    direction: ltr;
 }
 
 /* Locked state - controls are grayed out */
@@ -201,25 +212,53 @@ h1 {
     transform: translateX(20px);
 }
 
-/* Floating Action Button (FAB) for Share */
-#share-button {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
+/* Floating bottom bar for share button */
+.bottom-bar {
+    display: none; /* הסתרנו את כפתור השיתוף בתחתית */
+}
+/* Container for the filter bubbles */
+.category-filter-container {
+    overflow-x: auto; /* מאפשר גלילה אופקית */
+    white-space: nowrap; /* מונע מעבר שורה של הבועות */
+    -webkit-overflow-scrolling: touch; /* שיפור הגלילה באייפון */
+    padding: 10px 0;
+    position: relative;
+    /* Gradient overlay for soft edges */
+    -webkit-mask-image: linear-gradient(to right, 
+        rgba(0,0,0,0) 0%, 
+        rgba(0,0,0,1) 10%, 
+        rgba(0,0,0,1) 90%, 
+        rgba(0,0,0,0) 100%
+    );
+    mask-image: linear-gradient(to right, 
+        rgba(0,0,0,0) 0%, 
+        rgba(0,0,0,1) 10%, 
+        rgba(0,0,0,1) 90%, 
+        rgba(0,0,0,0) 100%
+    );
+}
+
+.category-filter-wrapper {
+    display: inline-flex; /* מאפשר לבועות להישאר בשורה אחת */
+    gap: 10px; /* מרווח בין בועה לבועה */
+    padding: 0 15px; /* מרווח מהצדדים */
+}
+
+/* Styling for each bubble */
+.category-bubble {
+    display: inline-block;
+    padding: 8px 18px;
+    background-color: #e9e9ea;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    user-select: none; /* מונע בחירת טקסט בלחיצה */
+}
+
+/* Style for the active/selected bubble */
+.category-bubble.active {
     background-color: #007aff;
     color: white;
-    border: none;
-    font-size: 1.8rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-    cursor: pointer;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-#share-button:hover {
-    background-color: #005bbd;
 }
