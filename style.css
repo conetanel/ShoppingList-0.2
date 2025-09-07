@@ -5,13 +5,18 @@ body {
     margin: 0;
     padding: 0;
     overflow-x: hidden;
-    touch-action: pan-y; /* מונע זום כפול באנדרואיד */
+    touch-action: pan-y;
 }
+
 /* Header and title styling */
 .header {
     display: flex;
-    justify-content: start; /* יישור לימין, כיוון שהכיווניות היא RTL */
     align-items: center;
+    /* אל תשתמש ב-space-between כאן */
+    justify-content: flex-start;
+    /* ודא שה-RTL תקף ספציפית גם על הקונטיינר */
+    direction: rtl;
+
     padding: 20px;
     background-color: #F2F4F7;
     position: sticky;
@@ -25,14 +30,19 @@ body {
     font-weight: 600;
     color: #000;
     margin: 0;
+    /* הקסם: דוחף את מה שאחריו (האיקון) לקצה השמאלי */
+    margin-inline-end: auto;   /* ב-RTL זה שמאל, ב-LTR זה ימין */
+    text-align: right;         /* רק כדי לוודא כיווניות טקסט */
 }
 
-.flex-spacer {
-    flex-grow: 1; /* זה האלמנט שיוצר את הרווח ומפצל את הכותרת מהאייקון */
-}
-
+/* תן לאיקון ממדים קליקים וודא שלא יקרוס לפני שהספרייה נטענת */
 #share-icon {
-    font-size: 1.5rem;
+    flex: 0 0 auto;
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    font-size: 1.5rem;   /* כבר קיים אצלך, אפשר להשאיר */
+    padding: 6px;        /* מגדיל אזור לחיץ */
     color: #007aff;
     cursor: pointer;
 }
