@@ -27,9 +27,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let shoppingList = {};
     let allCategorizedItems = {}; // משתנה גלובלי לאחסון הרשימה המלאה
+    let isBusy = false; // משתנה מצב חדש
+
+    // פונקציות לניהול מצב 'עסוק'
+    function setBusyState() {
+        isBusy = true;
+        document.body.classList.add('loading');
+    }
+
+    function clearBusyState() {
+        isBusy = false;
+        document.body.classList.remove('loading');
+    }
 
     // --- נתוני דמה מעודכנים לפיתוח מקומי ---
-    const isMockMode = false; // שנה ל-false כדי לחזור לקריאה מגוגל שיטס
+    const isMockMode = false; // שיניתי את המצב ל-false כדי לבדוק את הבעיה שתיארת
 
     const mockData = {
         "מטבח": [
@@ -182,6 +194,8 @@ document.addEventListener('DOMContentLoaded', () => {
             itemControlsDiv.appendChild(stepperContainer);
             
             plusButton.addEventListener('click', () => {
+                if (isBusy) return;
+                setBusyState();
                 let currentValue = parseInt(valueSpan.textContent);
                 if (currentValue < 10) {
                     currentValue++;
@@ -190,8 +204,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         shoppingList[itemObj.item] = { category, quantity: `${currentValue} יחידות` };
                     }
                 }
+                clearBusyState();
             });
             minusButton.addEventListener('click', () => {
+                if (isBusy) return;
+                setBusyState();
                 let currentValue = parseInt(valueSpan.textContent);
                 if (currentValue > 1) {
                     currentValue--;
@@ -200,6 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         shoppingList[itemObj.item] = { category, quantity: `${currentValue} יחידות` };
                     }
                 }
+                clearBusyState();
             });
         } else if (itemObj.type === 'גודל') {
             const sizeOptions = ['S', 'M', 'L'];
@@ -210,11 +228,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.className = 'size-button';
                 button.textContent = size;
                 button.addEventListener('click', () => {
+                    if (isBusy) return;
+                    setBusyState();
                     sizeButtonsContainer.querySelectorAll('.size-button').forEach(btn => btn.classList.remove('active'));
                     button.classList.add('active');
                     if (toggleInput.checked) {
                         shoppingList[itemObj.item] = { category, size };
                     }
+                    clearBusyState();
                 });
                 sizeButtonsContainer.appendChild(button);
             });
@@ -225,6 +246,8 @@ document.addEventListener('DOMContentLoaded', () => {
         itemDiv.appendChild(itemControlsDiv);
 
         toggleInput.addEventListener('change', (e) => {
+            if (isBusy) return;
+            setBusyState();
             if (e.target.checked) {
                 itemControlsDiv.classList.remove('locked');
                 if (itemObj.type === 'כמות') {
@@ -240,6 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 itemControlsDiv.classList.add('locked');
                 delete shoppingList[itemObj.item];
             }
+            clearBusyState();
         });
 
         return itemDiv;
@@ -265,6 +289,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // הוסף Event Listener עבור כל הבועות
         categoryFilterWrapper.addEventListener('click', (event) => {
+            if (isBusy) return;
+            setBusyState();
             const target = event.target;
             if (target.classList.contains('category-bubble')) {
                 // הסר את הסטטוס 'active' מכל הבועות
@@ -277,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const selectedCategory = target.dataset.category;
                 filterList(selectedCategory, allCategorizedItems);
             }
+            clearBusyState();
         });
     }
 
@@ -295,6 +322,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event Listener עבור כפתור השיתוף
     shareIcon.addEventListener('click', async () => {
+        if (isBusy) return;
+        setBusyState();
         let message = "📋 רשימת קניות:\n\n";
         const categories = {};
 
@@ -332,6 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
             console.log('Web Share API לא נתמך, נשלח לוואטסאפ.');
         }
+        clearBusyState();
     });
 
     fetchAndRenderList();
