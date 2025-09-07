@@ -5,27 +5,19 @@ body {
     margin: 0;
     padding: 0;
     overflow-x: hidden;
-    transition: opacity 0.3s ease-in-out;
+    touch-action: pan-y; /* מונע זום כפול באנדרואיד */
 }
-
-/* Loading state styles */
-body.loading {
-    opacity: 0.6;
-    pointer-events: none;
-    cursor: wait;
-}
-
 /* Header and title styling */
 .header {
-    display: flex; /* הוספנו display: flex כדי ליישר את האלמנטים */
-    justify-content: space-between; /* מרחיק את הכותרת מהאייקון */
-    align-items: center; /* מיישר את האלמנטים אנכית */
+    display: flex;
+    justify-content: start; /* יישור לימין, כיוון שהכיווניות היא RTL */
+    align-items: center;
     padding: 20px;
-    background-color: #F2F4F7; /* שינינו את הרקע לשקוף כדי שלא יראה צף */
+    background-color: #F2F4F7;
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* צל קטן כדי שיבלוט בזמן גלילה */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .header h1 {
@@ -33,6 +25,10 @@ body.loading {
     font-weight: 600;
     color: #000;
     margin: 0;
+}
+
+.flex-spacer {
+    flex-grow: 1; /* זה האלמנט שיוצר את הרווח ומפצל את הכותרת מהאייקון */
 }
 
 #share-icon {
@@ -66,11 +62,11 @@ body.loading {
 
 /* Card for each category - with rounded corners */
 .item-card {
-    background-color: white; /* רקע לבן לכרטיסייה */
-    border-radius: 12px; /* פינות מעוגלות */
+    background-color: white;
+    border-radius: 12px;
     overflow: hidden;
     margin-top: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* צל עדין */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .item {
@@ -222,16 +218,16 @@ body.loading {
 
 /* Floating bottom bar for share button */
 .bottom-bar {
-    display: none; /* הסתרנו את כפתור השיתוף בתחתית */
+    display: none;
 }
+
 /* Container for the filter bubbles */
 .category-filter-container {
-    overflow-x: auto; /* מאפשר גלילה אופקית */
-    white-space: nowrap; /* מונע מעבר שורה של הבועות */
-    -webkit-overflow-scrolling: touch; /* שיפור הגלילה באייפון */
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
     padding: 10px 0;
     position: relative;
-    /* Gradient overlay for soft edges */
     -webkit-mask-image: linear-gradient(to right, 
         rgba(0,0,0,0) 0%, 
         rgba(0,0,0,1) 10%, 
@@ -247,9 +243,9 @@ body.loading {
 }
 
 .category-filter-wrapper {
-    display: inline-flex; /* מאפשר לבועות להישאר בשורה אחת */
-    gap: 10px; /* מרווח בין בועה לבועה */
-    padding: 0 15px; /* מרווח מהצדדים */
+    display: inline-flex;
+    gap: 10px;
+    padding: 0 15px;
 }
 
 /* Styling for each bubble */
@@ -262,7 +258,7 @@ body.loading {
     color: #333;
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s;
-    user-select: none; /* מונע בחירת טקסט בלחיצה */
+    user-select: none;
 }
 
 /* Style for the active/selected bubble */
