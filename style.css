@@ -5,6 +5,14 @@ body {
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Loading state styles */
+body.loading {
+    opacity: 0.6;
+    pointer-events: none;
+    cursor: wait;
 }
 
 /* Header and title styling */
