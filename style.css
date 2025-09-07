@@ -12,11 +12,8 @@ body {
 .header {
     display: flex;
     align-items: center;
-    /* אל תשתמש ב-space-between כאן */
-    justify-content: flex-start;
-    /* ודא שה-RTL תקף ספציפית גם על הקונטיינר */
+    justify-content: space-between; /* חזור ל-space-between */
     direction: rtl;
-
     padding: 20px;
     background-color: #F2F4F7;
     position: sticky;
@@ -30,19 +27,22 @@ body {
     font-weight: 600;
     color: #000;
     margin: 0;
-    /* הקסם: דוחף את מה שאחריו (האיקון) לקצה השמאלי */
-    margin-inline-end: auto;   /* ב-RTL זה שמאל, ב-LTR זה ימין */
-    text-align: right;         /* רק כדי לוודא כיווניות טקסט */
+    text-align: right;
+    flex: 0 0 auto; /* מונע מהכותרת להתרחב */
 }
 
-/* תן לאיקון ממדים קליקים וודא שלא יקרוס לפני שהספרייה נטענת */
+/* הסר את הflex-spacer מה-CSS כי לא נצטרך אותו */
+.flex-spacer {
+    display: none;
+}
+
 #share-icon {
     flex: 0 0 auto;
     display: inline-block;
     width: 28px;
     height: 28px;
-    font-size: 1.5rem;   /* כבר קיים אצלך, אפשר להשאיר */
-    padding: 6px;        /* מגדיל אזור לחיץ */
+    font-size: 1.5rem;
+    padding: 6px;
     color: #007aff;
     cursor: pointer;
 }
