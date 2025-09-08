@@ -8,18 +8,23 @@ body {
     touch-action: pan-y;
 }
 
+/* New: Container for the sticky header and filter bar */
+#sticky-header-container {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: #F2F4F7;
+}
+
 /* Header and title styling */
 .header {
     display: flex;
     align-items: center;
-    justify-content: space-between; /* חזור ל-space-between */
+    justify-content: space-between;
     direction: rtl;
     padding: 20px;
     background-color: #F2F4F7;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
 }
 
 .header h1 {
@@ -28,10 +33,9 @@ body {
     color: #000;
     margin: 0;
     text-align: right;
-    flex: 0 0 auto; /* מונע מהכותרת להתרחב */
+    flex: 0 0 auto;
 }
 
-/* הסר את הflex-spacer מה-CSS כי לא נצטרך אותו */
 .flex-spacer {
     display: none;
 }
@@ -47,7 +51,6 @@ body {
     cursor: pointer;
 }
 
-/* Loading spinner */
 #loading-spinner {
     text-align: center;
     color: #8e8e93;
@@ -55,9 +58,9 @@ body {
     font-size: 1.1rem;
 }
 
-/* Shopping list container */
 #shopping-list-container {
     padding: 0 15px;
+    padding-top: 150px; 
 }
 
 /* Category styling */
@@ -70,7 +73,6 @@ body {
     text-align: right;
 }
 
-/* Card for each category - with rounded corners */
 .item-card {
     background-color: white;
     border-radius: 12px;
@@ -99,7 +101,6 @@ body {
     margin-right: 15px;
 }
 
-/* Item Controls - now always visible */
 .item-controls {
     display: flex;
     align-items: center;
@@ -107,14 +108,12 @@ body {
     direction: ltr;
 }
 
-/* Locked state - controls are grayed out */
 .item-controls.locked .control {
     pointer-events: none;
     opacity: 0.5;
     transition: opacity 0.2s;
 }
 
-/* Quantity Stepper (New iOS style) */
 .quantity-stepper-container {
     display: inline-flex;
     align-items: center;
@@ -149,7 +148,6 @@ body {
     color: #000;
 }
 
-/* Size Buttons (iOS Segmented Control style) */
 .size-buttons-container {
     display: inline-flex;
     border: 1px solid #007aff;
@@ -177,7 +175,6 @@ body {
     color: white;
 }
 
-/* iOS-style Toggle Switch */
 .toggle-switch {
     position: relative;
     display: inline-block;
@@ -226,30 +223,36 @@ body {
     transform: translateX(20px);
 }
 
-/* Floating bottom bar for share button */
 .bottom-bar {
     display: none;
 }
 
-/* Container for the filter bubbles */
 .category-filter-container {
     overflow-x: auto;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
     padding: 10px 0;
     position: relative;
-    -webkit-mask-image: linear-gradient(to right, 
-        rgba(0,0,0,0) 0%, 
-        rgba(0,0,0,1) 10%, 
-        rgba(0,0,0,1) 90%, 
+    direction: rtl;
+    -webkit-mask-image: linear-gradient(to right,
+        rgba(0,0,0,0) 0%,
+        rgba(0,0,0,1) 10%,
+        rgba(0,0,0,1) 90%,
         rgba(0,0,0,0) 100%
     );
-    mask-image: linear-gradient(to right, 
-        rgba(0,0,0,0) 0%, 
-        rgba(0,0,0,1) 10%, 
-        rgba(0,0,0,1) 90%, 
+    mask-image: linear-gradient(to right,
+        rgba(0,0,0,0) 0%,
+        rgba(0,0,0,1) 10%,
+        rgba(0,0,0,1) 90%,
         rgba(0,0,0,0) 100%
     );
+    
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.category-filter-container::-webkit-scrollbar {
+    display: none;
 }
 
 .category-filter-wrapper {
@@ -258,7 +261,6 @@ body {
     padding: 0 15px;
 }
 
-/* Styling for each bubble */
 .category-bubble {
     display: inline-block;
     padding: 8px 18px;
@@ -271,8 +273,21 @@ body {
     user-select: none;
 }
 
-/* Style for the active/selected bubble */
 .category-bubble.active {
     background-color: #007aff;
     color: white;
+}
+
+.category:first-of-type {
+    margin-top: 0;
+}
+
+/* NEW: The element that creates the fade effect */
+.content-fade-spacer {
+    height: 50px;
+    background: linear-gradient(
+        to bottom,
+        rgba(242, 244, 247, 0) 0%,
+        rgba(242, 244, 247, 1) 100%
+    );
 }
