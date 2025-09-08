@@ -2,31 +2,35 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
+		<!-- PWA manifest (לאנדרואיד/דפדפנים אחרים, וגם שימושי כללי) -->
+		<link rel="manifest" href="manifest.webmanifest">
+
+		<!-- iOS: הרצה כמסך מלא כשמוסיפים למסך הבית -->
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-title" content="רשימת קניות">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<!-- iOS: אייקון למסך הבית (iOS מתעלם מה-manifest לאייקון) -->
+		<link rel="apple-touch-icon" href="icons/icon-180.png" sizes="180x180">
+		<!-- אופציונלי לאייפד/דגמים נוספים -->
+		<link rel="apple-touch-icon" href="icons/icon-167.png" sizes="167x167">
+		<link rel="apple-touch-icon" href="icons/icon-152.png" sizes="152x152">
+		
+		<!-- צבע מסגרת/סרגלים בדפדפנים תומכים -->
+		<meta name="theme-color" content="#007aff">
+		
+		<!-- מומלץ כדי למלא מתחת ל-notch ולהיעזר ב-safe areas -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>רשימת קניות</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-
-    <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyDqfAJm1kqjTiNc8RTJ8ra-vEOxrkwQqLk",
-        authDomain: "shopping-list-2-6b2c1.firebaseapp.com",
-        projectId: "shopping-list-2-6b2c1",
-        storageBucket: "shopping-list-2-6b2c1.firebasestorage.app",
-        messagingSenderId: "71933730738",
-        appId: "1:71933730738:web:9984c545ac879692104eab",
-        measurementId: "G-5WNKMWP4G8"
-    };
-    
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    </script>
+   
         <link rel="stylesheet" href="style.css">
         
         <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
         <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-
+	
     <style>
         body {
             touch-action: manipulation;
@@ -50,6 +54,7 @@
 
 <div id="shopping-list-container"></div>
     
-<script src="script.js"></script>
+<script type="module" src="script.js"></script>
+
 </body>
 </html>
