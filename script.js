@@ -2,7 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     const SHEET_ID = '11OxjXpAo3vWnzJFG738M8FjelkK1vBM09dHzYf78Ubs'; // החלף ב-ID של הגיליון שלך
-    const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;`;
+    const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 
     const container = document.getElementById('shopping-list-container');
     const loadingSpinner = document.getElementById('loading-spinner');
