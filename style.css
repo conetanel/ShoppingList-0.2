@@ -291,3 +291,6 @@ body {
         rgba(242, 244, 247, 1) 100%
     );
 }
+.header { padding-top: calc(20px + env(safe-area-inset-top)); }
+.footer { padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
+body { background-color: #f2f2f7; }
