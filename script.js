@@ -1,10 +1,10 @@
 // ייבוא פונקציות ה-SDK מ-Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-
-// אובייקט firebaseConfig הייחודי שלך
-const firebaseConfig = {
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+ import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+ 
+ // אובייקט firebaseConfig הייחודי שלך
+ const firebaseConfig = {
     apiKey: "AIzaSyDqfAJm1kqjTiNc8RTJ8ra-vEOxrkwQqLk",
     authDomain: "shopping-list-2-6b2c1.firebaseapp.com",
     projectId: "shopping-list-2-6b2c1",
@@ -12,26 +12,29 @@ const firebaseConfig = {
     messagingSenderId: "71933730738",
     appId: "1:71933730738:web:9984c545ac879692104eab",
     measurementId: "G-5WNKMWP4G8"
-};
-
-// אתחול Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// משתנים גלובליים
-let shoppingList = {};
-let allCategorizedItems = {};
-let currentUserId = null;
-
-// המשתנים של ה-DOM
-const container = document.getElementById('shopping-list-container');
-const loadingSpinner = document.getElementById('loading-spinner');
-const shareIcon = document.getElementById('share-icon');
-const categoryFilterWrapper = document.querySelector('.category-filter-wrapper');
-
-const isMockMode = false;
-const mockData = {
+ };
+ 
+ // אתחול Firebase
+ const app = initializeApp(firebaseConfig);
+ const auth = getAuth(app);
+ const db = getFirestore(app);
+ 
+ // משתנים גלובליים
+ let shoppingList = {};
+ let allCategorizedItems = {};
+ let currentUserId = null;
+ let currentActiveCategory = null;
+ let isProgrammaticScroll = false;
+ 
+ // המשתנים של ה-DOM
+ const container = document.getElementById('shopping-list-container');
+ const loadingSpinner = document.getElementById('loading-spinner');
+ const shareIcon = document.getElementById('share-icon');
+ const categoryFilterWrapper = document.querySelector('.category-filter-wrapper');
+ const headerContainer = document.getElementById('sticky-header-container');
+ 
+ const isMockMode = false;
+ const mockData = {
     "מטבח": [
         { item: "קפה", type: "רגיל" },
         { item: "חלב", type: "כמות" },
@@ -75,12 +78,55 @@ const mockData = {
         { item: "גרביים", type: "רגיל" },
         { item: "סוודר", type: "גודל" }
     ]
-};
-
-const SHEET_ID = '11OxjXpAo3vWnzJFG738M8FjelkK1vBM09dHzYf78Ubs';
-const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
-
-async function fetchAndRenderList() {
+ };
+ 
+ const SHEET_ID = '11OxjXpAo3vWnzJFG738M8FjelkK1vBM09dHzYf78Ubs';
+ const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+ 
+ // יצירת מופע חדש של IntersectionObserver
+ const observerOptions = {
+    root: null,
+    rootMargin: `-${headerContainer.offsetHeight}px 0px 0px 0px`,
+    threshold: 0
+ };
+ const intersectionObserver = new IntersectionObserver(handleIntersection, observerOptions);
+ 
+ function handleIntersection(entries, observer) {
+    if (isProgrammaticScroll) {
+        return;
+    }
+ 
+    entries.forEach(entry => {
+        const categoryName = entry.target.dataset.category;
+ 
+        if (entry.isIntersecting && entry.intersectionRatio > 0) {
+            // אם האלמנט נכנס לתצוגה או גלוי, הוא מסומן
+            setActiveCategory(categoryName);
+        } else if (!entry.isIntersecting && entry.boundingClientRect.top > 0) {
+            // אם האלמנט עזב את התצוגה לכיוון מטה
+            const prevCategoryElement = entry.target.previousElementSibling;
+            if (prevCategoryElement) {
+                const prevCategoryName = prevCategoryElement.dataset.category;
+                setActiveCategory(prevCategoryName);
+            }
+        }
+    });
+ }
+ 
+ function setActiveCategory(categoryName) {
+    currentActiveCategory = categoryName;
+    categoryFilterWrapper.querySelectorAll('.category-bubble').forEach(b => {
+        b.classList.remove('active');
+    });
+ 
+    const activeBubble = document.querySelector(`.category-bubble[data-category='${categoryName}']`);
+    if (activeBubble) {
+        activeBubble.classList.add('active');
+        activeBubble.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'start' });
+    }
+ }
+ 
+ async function fetchAndRenderList() {
     if (isMockMode) {
         allCategorizedItems = mockData;
         renderCategoryFilters(allCategorizedItems);
@@ -91,13 +137,13 @@ async function fetchAndRenderList() {
         loadingSpinner.style.display = 'none';
         return;
     }
-
+ 
     try {
         const response = await fetch(sheetURL);
         const text = await response.text();
         const json = JSON.parse(text.substr(47).slice(0, -2));
         const rows = json.table.rows.slice(1);
-
+ 
         const categorizedItems = {};
         
         rows.forEach(row => {
@@ -107,7 +153,7 @@ async function fetchAndRenderList() {
             const category = cells[0]?.v;
             const item = cells[1]?.v;
             const type = cells[2]?.v;
-
+ 
             if (category && item) {
                 if (!categorizedItems[category]) {
                     categorizedItems[category] = [];
@@ -115,44 +161,56 @@ async function fetchAndRenderList() {
                 categorizedItems[category].push({ item, type });
             }
         });
-
+ 
         allCategorizedItems = categorizedItems;
         renderCategoryFilters(allCategorizedItems);
         renderList(allCategorizedItems);
-
+ 
         // Call the loading function here, after the list is rendered
         if (currentUserId) {
             loadUserShoppingList(currentUserId);
         }
-
+ 
         loadingSpinner.style.display = 'none';
-
+ 
     } catch (err) {
         loadingSpinner.textContent = '❌ שגיאה בטעינת הנתונים.';
         console.error(err);
     }
-}
-
-function renderList(categorizedItems) {
+ }
+ 
+ function renderList(categorizedItems) {
     container.innerHTML = '';
     for (const category in categorizedItems) {
+        const categoryWrapper = document.createElement('div');
+        categoryWrapper.className = 'category-wrapper';
+        categoryWrapper.dataset.category = category;
+        
+        // הוסף את הקיזוז לגלילה בצורה מודרנית
+        categoryWrapper.style.scrollMarginTop = `${headerContainer.offsetHeight + 10}px`;
+        
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'category';
         categoryDiv.textContent = category;
-        container.appendChild(categoryDiv);
-
+        
         const card = document.createElement('div');
         card.className = 'item-card';
-
+ 
         categorizedItems[category].forEach(itemObj => {
             const itemElement = createItemElement(itemObj, category);
             card.appendChild(itemElement);
         });
-        container.appendChild(card);
+ 
+        categoryWrapper.appendChild(categoryDiv);
+        categoryWrapper.appendChild(card);
+        container.appendChild(categoryWrapper);
+ 
+        intersectionObserver.observe(categoryWrapper);
     }
-}
-
-function createItemElement(itemObj, category) {
+ }
+ 
+ 
+ function createItemElement(itemObj, category) {
     const itemDiv = document.createElement('div');
     itemDiv.className = 'item';
     
@@ -160,7 +218,7 @@ function createItemElement(itemObj, category) {
     itemNameSpan.textContent = itemObj.item;
     itemNameSpan.className = 'item-name';
     itemDiv.appendChild(itemNameSpan);
-
+ 
     const itemControlsDiv = document.createElement('div');
     itemControlsDiv.className = 'item-controls locked';
     
@@ -233,9 +291,9 @@ function createItemElement(itemObj, category) {
         });
         itemControlsDiv.appendChild(sizeButtonsContainer);
     }
-
+ 
     itemDiv.appendChild(itemControlsDiv);
-
+ 
     toggleInput.addEventListener('change', (e) => {
         if (e.target.checked) {
             itemControlsDiv.classList.remove('locked');
@@ -255,17 +313,19 @@ function createItemElement(itemObj, category) {
             if (currentUserId) saveShoppingList(currentUserId, shoppingList);
         }
     });
-
+ 
     return itemDiv;
-}
-
-function renderCategoryFilters(categorizedItems) {
-    const allBubble = document.createElement('div');
-    allBubble.className = 'category-bubble active';
-    allBubble.textContent = 'הכל';
-    allBubble.dataset.category = 'all';
-    categoryFilterWrapper.appendChild(allBubble);
-
+ }
+ 
+ function renderCategoryFilters(categorizedItems) {
+    categoryFilterWrapper.innerHTML = '';
+    const categories = Object.keys(categorizedItems);
+    if (categories.length > 0) {
+        if (!currentActiveCategory) {
+            setActiveCategory(categories[0]);
+        }
+    }
+ 
     for (const category in categorizedItems) {
         const bubble = document.createElement('div');
         bubble.className = 'category-bubble';
@@ -273,36 +333,40 @@ function renderCategoryFilters(categorizedItems) {
         bubble.dataset.category = category;
         categoryFilterWrapper.appendChild(bubble);
     }
-
+    
+    // בועה ראשונה כפעילה
+    const firstBubble = categoryFilterWrapper.querySelector('.category-bubble');
+    if (firstBubble) {
+        firstBubble.classList.add('active');
+    }
+ 
     categoryFilterWrapper.addEventListener('click', (event) => {
         const target = event.target;
         if (target.classList.contains('category-bubble')) {
-            categoryFilterWrapper.querySelectorAll('.category-bubble').forEach(b => {
-                b.classList.remove('active');
-            });
-            target.classList.add('active');
-            
             const selectedCategory = target.dataset.category;
-            filterList(selectedCategory, allCategorizedItems);
+            
+            // עדכון הבועה הפעילה וגלילת סרגל הקטגוריות
+            setActiveCategory(selectedCategory);
+ 
+            // גלילת רשימת הקניות אל הקטגוריה שנבחרה
+            const categoryElement = document.querySelector(`.category-wrapper[data-category='${selectedCategory}']`);
+            if (categoryElement) {
+                isProgrammaticScroll = true; // הפעלת הדגל
+                categoryElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+ 
+                // איפוס הדגל לאחר שהגלילה אמורה להסתיים
+                setTimeout(() => {
+                    isProgrammaticScroll = false;
+                }, 500);
+            }
         }
     });
-}
-
-function filterList(selectedCategory, data) {
-    container.innerHTML = '';
-    if (selectedCategory === 'all') {
-        renderList(data);
-    } else {
-        const filteredData = {};
-        filteredData[selectedCategory] = data[selectedCategory];
-        renderList(filteredData);
-    }
-}
-
-shareIcon.addEventListener('click', async () => {
+ }
+ 
+ shareIcon.addEventListener('click', async () => {
     let message = "📋 רשימת קניות:\n\n";
     const categories = {};
-
+ 
     for (const item in shoppingList) {
         const data = shoppingList[item];
         if (!categories[data.category]) {
@@ -316,12 +380,12 @@ shareIcon.addEventListener('click', async () => {
         }
         categories[data.category].push(itemText);
     }
-
+ 
     for (const cat in categories) {
         message += `*${cat}*\n`;
         message += categories[cat].join('\n') + '\n\n';
     }
-
+ 
     if (navigator.share) {
         try {
             await navigator.share({
@@ -337,9 +401,9 @@ shareIcon.addEventListener('click', async () => {
         window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
         console.log('Web Share API לא נתמך, נשלח לוואטסאפ.');
     }
-});
-
-function updateUIWithSavedList(savedList) {
+ });
+ 
+ function updateUIWithSavedList(savedList) {
     const itemNames = document.querySelectorAll('.item-name');
     
     itemNames.forEach(itemNameSpan => {
@@ -347,7 +411,7 @@ function updateUIWithSavedList(savedList) {
         if (savedList[itemText]) {
             const itemElement = itemNameSpan.closest('.item');
             if (!itemElement) return;
-
+ 
             const toggleInput = itemElement.querySelector('.toggle-switch input');
             const itemControlsDiv = itemElement.querySelector('.item-controls');
             
@@ -357,7 +421,7 @@ function updateUIWithSavedList(savedList) {
             if (itemControlsDiv) {
                 itemControlsDiv.classList.remove('locked');
             }
-
+ 
             const savedData = savedList[itemText];
             if (savedData.quantity) {
                 const valueSpan = itemElement.querySelector('.stepper-value');
@@ -375,9 +439,9 @@ function updateUIWithSavedList(savedList) {
             }
         }
     });
-}
-
-function saveShoppingList(userId, list) {
+ }
+ 
+ function saveShoppingList(userId, list) {
     const userDocRef = doc(db, "users", userId);
     setDoc(userDocRef, { shoppingList: list })
     .then(() => {
@@ -386,9 +450,9 @@ function saveShoppingList(userId, list) {
     .catch(error => {
         console.error("שגיאה בשמירת רשימת הקניות:", error);
     });
-}
-
-async function loadUserShoppingList(userId) {
+ }
+ 
+ async function loadUserShoppingList(userId) {
     const userDocRef = doc(db, "users", userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -405,9 +469,9 @@ async function loadUserShoppingList(userId) {
     } catch (error) {
         console.error("שגיאה בקבלת נתונים:", error);
     }
-}
-
-onAuthStateChanged(auth, (user) => {
+ }
+ 
+ onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUserId = user.uid;
         console.log("משתמש מחובר עם מזהה:", currentUserId);
@@ -418,4 +482,4 @@ onAuthStateChanged(auth, (user) => {
             console.error("שגיאה בהתחברות אנונימית:", error);
           });
     }
-});
+ });
