@@ -8,6 +8,13 @@ body {
     touch-action: pan-y;
 }
 
+/* הגדרת גלילה על ה-body עצמו */
+html, body {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
 /* New: Container for the sticky header and filter bar */
 #sticky-header-container {
     position: sticky;
@@ -24,7 +31,7 @@ body {
     direction: rtl;
     padding: 20px;
     background-color: #F2F4F7;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .header h1 {
@@ -60,12 +67,17 @@ body {
 
 #shopping-list-container {
     padding: 0 15px;
-    padding-top: 150px; 
+    padding-top: 15px;
+}
+
+/* New: Category Wrapper for scroll snap */
+.category-wrapper {
+    /* הוסר: scroll-snap-align: start; */
+    padding-top: 20px;
 }
 
 /* Category styling */
 .category {
-    margin-top: 30px;
     font-size: 0.9rem;
     font-weight: 400;
     color: #8e8e93;
@@ -259,6 +271,8 @@ body {
     display: inline-flex;
     gap: 10px;
     padding: 0 15px;
+    /* הוסר: scroll-snap-type: x mandatory; */
+    direction: rtl;
 }
 
 .category-bubble {
@@ -271,6 +285,7 @@ body {
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s;
     user-select: none;
+    /* הוסר: scroll-snap-align: start; */
 }
 
 .category-bubble.active {
@@ -278,11 +293,7 @@ body {
     color: white;
 }
 
-.category:first-of-type {
-    margin-top: 0;
-}
-
-/* NEW: The element that creates the fade effect */
+/* The element that creates the fade effect */
 .content-fade-spacer {
     height: 50px;
     background: linear-gradient(
@@ -291,6 +302,15 @@ body {
         rgba(242, 244, 247, 1) 100%
     );
 }
+
 .header { padding-top: calc(20px + env(safe-area-inset-top)); }
 .footer { padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
 body { background-color: #f2f2f7; }
+
+/* fix for safari safe areas */
+body {
+    padding-top: constant(safe-area-inset-top);
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: constant(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom);
+}
