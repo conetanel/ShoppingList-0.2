@@ -21,7 +21,7 @@ html, body {
     top: 0;
     z-index: 100;
     background-color: #F2F4F7;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+    box-shadow: none; 
 }
 
 /* Header and title styling */
@@ -238,22 +238,22 @@ html, body {
     padding: 10px 0;
     position: relative;
     direction: rtl;
-    /* טשטוש בצדדים למראה מקצועי יותר */
-    -webkit-mask-image: linear-gradient(to right,
-        rgba(0,0,0,0) 0%,
-        rgba(0,0,0,1) 10%,
-        rgba(0,0,0,1) 90%,
-        rgba(0,0,0,0) 100%
-    );
-    mask-image: linear-gradient(to right,
-        rgba(0,0,0,0) 0%,
-        rgba(0,0,0,1) 10%,
-        rgba(0,0,0,1) 90%,
-        rgba(0,0,0,0) 100%
-    );
-    
-    -ms-overflow-style: none; /* הסתרת סרגל גלילה ב-IE/Edge */
-    scrollbar-width: none; /* הסתרת סרגל גלילה ב-Firefox */
+       -ms-overflow-style: none;
+    scrollbar-width: none;
+    min-height: 80px; /* גובה מינימלי להבטחת תצוגה */
+}
+
+.category-filter-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0; /* התחלה מהתחתית של הסרגל */
+    left: 0;
+    right: 0;
+    height: 30px; /* גובה הגרידיאנט - ניתן להתאים */
+    pointer-events: none; /* לא משפיע על זרימת התוכן */
+    z-index: 1; /* מעל התוכן אבל מתחת לסרגל */
+    background: var(--bottom-gradient, linear-gradient(to bottom, #F2F4F7, transparent)); /* גרידיאנט תחתון דיפולטי */
+    transform: translateY(100%); /* מזיז את הגרידיאנט מתחת לסרגל */
 }
 
 .category-filter-container::-webkit-scrollbar {
@@ -339,3 +339,137 @@ body {
     padding-bottom: constant(safe-area-inset-bottom);
     padding-bottom: env(safe-area-inset-bottom);
 }
+/* כפתור אייקון במקום הטוגל */
+.item-controls .icon-toggle {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.item-controls .icon-toggle ion-icon {
+    position: absolute;
+    font-size: 28px;
+    transition: opacity 140ms ease, transform 140ms ease;
+    will-change: opacity, transform;
+    line-height: 1;
+}
+
+/* מצב לא נבחר – רואים add-circle-outline */
+.item-controls .icon-toggle .icon-add { 
+    opacity: 1; 
+    transform: scale(1); 
+    color: #b0b0b0;
+}
+
+/* מצב נבחר – רואים checkmark-circle בירוק */
+.item-controls .icon-toggle .icon-check {
+    opacity: 0;
+    transform: scale(0.6);
+    color: #34c759; /* ירוק */
+}
+
+/* כשהכפתור פעיל */
+.item-controls .icon-toggle.active .icon-add {
+    opacity: 0;
+    transform: scale(0.6);
+}
+.item-controls .icon-toggle.active .icon-check {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* אפקט פופ קצר (סטייל ספוטיפיי) */
+.item-controls .icon-toggle.pop {
+    animation: icon-pop 220ms ease-out;
+}
+@keyframes icon-pop {
+    0%   { transform: scale(0.9); }
+    60%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+/* ריפל עגול ועדין */
+.item-controls .icon-toggle::after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-radius: 999px;
+    background: rgba(52, 199, 89, 0.18);
+    pointer-events: none;
+    opacity: 0;
+}
+.item-controls .icon-toggle.ripple::after {
+    animation: ripple-out 300ms ease-out;
+}
+@keyframes ripple-out {
+    0%   { width: 0; height: 0; opacity: 0.35; }
+    100% { width: 44px; height: 44px; opacity: 0; }
+}
+
+/* אופציונלי: נגישות – להפחית אנימציה אם המשתמש ביקש */
+@media (prefers-reduced-motion: reduce) {
+  .item-controls .icon-toggle ion-icon,
+  .item-controls .icon-toggle.pop,
+  .item-controls .icon-toggle.ripple::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+/* הסתרת כפתורי כמות במצב רגיל */
+.item-controls .quantity-stepper-container {
+    opacity: 0;
+    transform: scale(0.8);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* הצגה הדרגתית כשנבחר */
+.item-controls.show-controls .quantity-stepper-container {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+/* אותו רעיון גם לגודל (אם יש) */
+.item-controls .size-buttons-container {
+    opacity: 0;
+    transform: scale(0.9);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.item-controls.show-controls .size-buttons-container {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+/* מצב מוסתר (ברירת מחדל) */
+.item-controls .quantity-stepper-container,
+.item-controls .size-buttons-container {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: scale(0.95);
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+}
+
+/* מצב מוצג */
+.item-controls.show-controls .quantity-stepper-container,
+.item-controls.show-controls .size-buttons-container {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: scale(1);
+}
+
