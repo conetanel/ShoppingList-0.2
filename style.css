@@ -268,27 +268,23 @@ html, body {
     align-items: flex-start; 
 }
 
-/* ❗ חשוב: עיצוב הסטטוס המעודכן: מלבן אנכי */
+/* עיצוב הסטטוס: מלבן אנכי */
 .category-bubble.status-style {
     display: flex;
-    flex-direction: column; /* ארגון אנכי: אייקון למעלה, טקסט למטה */
-    justify-content: space-between; /* מרווח בין האייקון לטקסט */
+    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-    
-    width: 75px; /* מעט יותר רחב לטקסט ארוך */
-    height: 95px; /* גובה קבוע המאפשר 2 שורות */
-    
-    padding: 10px 5px 8px 5px; 
-    
-    border-radius: 14px; 
-    font-size: 0.8rem; 
+    width: 75px;
+    height: 95px;
+    padding: 10px 5px 8px 5px;
+    border-radius: 14px;
+    font-size: 0.8rem;
     font-weight: 500;
-    
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
     user-select: none;
-    
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    /* צבעים נקבעים דינמית ב-JavaScript לפי קטגוריה */
 }
 
 /* ❗ חשוב: עיצוב האייקון הגדול במרכז */
@@ -321,9 +317,9 @@ html, body {
     flex-basis: auto;
 }
 
-/* 🆕 עיצוב מצב פעיל (Active) */
+/* עיצוב מצב פעיל */
 .category-bubble.status-style.active {
-    border: 3px solid white; 
+    border: 3px solid white;
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3), 0 0 0 5px rgba(255, 255, 255, 0.8);
     transform: scale(1.02);
 }
