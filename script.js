@@ -1,10 +1,10 @@
 // ייבוא פונקציות ה-SDK מ-Firebase
- import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
- import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
- import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
- 
- // אובייקט firebaseConfig הייחודי שלך
- const firebaseConfig = {
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+// אובייקט firebaseConfig הייחודי שלך
+const firebaseConfig = {
     apiKey: "AIzaSyDqfAJm1kqjTiNc8RTJ8ra-vEOxrkwQqLk",
     authDomain: "shopping-list-2-6b2c1.firebaseapp.com",
     projectId: "shopping-list-2-6b2c1",
@@ -12,148 +12,151 @@
     messagingSenderId: "71933730738",
     appId: "1:71933730738:web:9984c545ac879692104eab",
     measurementId: "G-5WNKMWP4G8"
- };
- 
- // אתחול Firebase
- const app = initializeApp(firebaseConfig);
- const auth = getAuth(app);
- const db = getFirestore(app);
- 
- // משתנים גלובליים
- let shoppingList = {};
- let allCategorizedItems = {};
- let currentUserId = null;
- let currentActiveCategory = null;
- let isProgrammaticScroll = false;
- 
- // המשתנים של ה-DOM
- const container = document.getElementById('shopping-list-container');
- const loadingSpinner = document.getElementById('loading-spinner');
- const shareIcon = document.getElementById('share-icon');
- const categoryFilterWrapper = document.querySelector('.category-filter-wrapper');
- const headerContainer = document.getElementById('sticky-header-container');
- 
- const isMockMode = false;
- const mockData = {
-    "מטבח": [
-        { item: "קפה", type: "רגיל" },
-        { item: "חלב", type: "כמות" },
-        { item: "שוקולד", type: "רגיל" },
-        { item: "דגנים", type: "רגיל" },
-        { item: "שמן זית", type: "רגיל" },
-        { item: "קמח", type: "רגיל" },
-        { item: "סוכר", type: "רגיל" },
-        { item: "מלח", type: "רגיל" }
-    ],
-    "ירקות": [
-        { item: "מלפפונים", type: "כמות" },
-        { item: "עגבניות", type: "כמות" },
-        { item: "בצל", type: "כמות" },
-        { item: "חסה", type: "רגיל" },
-        { item: "פלפל אדום", type: "רגיל" },
-        { item: "גזר", type: "כמות" },
-        { item: "קישואים", type: "כמות" },
-        { item: "כרוב", type: "רגיל" }
-    ],
-    "פירות": [
-        { item: "בננות", type: "כמות" },
-        { item: "תפוחים", type: "כמות" },
-        { item: "אבוקדו", type: "כמות" },
-        { item: "תפוזים", type: "כמות" },
-        { item: "ענבים", type: "כמות" },
-        { item: "אבטיח", type: "רגיל" },
-        { item: "מלון", type: "רגיל" }
-    ],
-    "לחמים": [
-        { item: "לחם לבן", type: "רגיל" },
-        { item: "לחם מלא", type: "רגיל" },
-        { item: "לחמניות", type: "כמות" },
-        { item: "פיתות", type: "כמות" },
-        { item: "בגט", type: "רגיל" }
-    ],
-    "בגדים": [
-        { item: "חולצה", type: "גודל" },
-        { item: "מכנס", type: "גודל" },
-        { item: "שמלה", type: "גודל" },
-        { item: "גרביים", type: "רגיל" },
-        { item: "סוודר", type: "גודל" }
-    ]
- };
- 
- const SHEET_ID = '11OxjXpAo3vWnzJFG738M8FjelkK1vBM09dHzYf78Ubs';
- const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
- 
- // יצירת מופע חדש של IntersectionObserver
- const observerOptions = {
-    root: null,
-    rootMargin: `-${headerContainer.offsetHeight}px 0px 0px 0px`,
-    threshold: 0
- };
- const intersectionObserver = new IntersectionObserver(handleIntersection, observerOptions);
- 
- function handleIntersection(entries, observer) {
-    if (isProgrammaticScroll) {
-        return;
+};
+
+// אתחול Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// משתנים גלובליים
+let shoppingList = {};
+let allCategorizedItems = {};
+let currentUserId = null;
+
+// המשתנים של ה-DOM
+const container = document.getElementById('shopping-list-container');
+const loadingSpinner = document.getElementById('loading-spinner');
+const shareIcon = document.getElementById('share-icon');
+const categoryFilterWrapper = document.querySelector('.category-filter-wrapper');
+const headerContainer = document.getElementById('sticky-header-container');
+
+const isMockMode = false;
+const SHEET_ID = '11OxjXpAo3vWnzJFG738M8FjelkK1vBM09dHzYf78Ubs';
+const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+// מערך צבעים סופי ומוגבל
+const COLOR_PALETTE = [
+    { background: '#F1C40F', text: '#000000' }, // צהוב-זהב
+    { background: '#AF99C9', text: '#000000' }, // סגול-לילך
+    { background: '#E74C3C', text: '#ffffff' }, // אדום-אש
+    { background: '#34495E', text: '#ffffff' }, // כחול כהה
+    { background: '#2ECC71', text: '#ffffff' }  // ירוק-דשא
+];
+
+// מיפוי אמוג'י לאייקון של Ionicons
+const EMOJI_TO_ICON = {
+    '🍖': 'restaurant-outline',
+    '🍗': 'restaurant-outline',
+    '🐟': 'restaurant-outline',
+    '🥕': 'leaf-outline',
+    '🍎': 'nutrition-outline',
+    '🍞': 'baguette-outline',
+    '🧊': 'snow-outline',
+    '🧂': 'flask-outline',
+    '👕': 'shirt-outline',
+    '💊': 'fitness-outline',
+    '🧺': 'basket-outline',
+    '🥂': 'wine-outline',
+    '🏠': 'grid-outline',
+    '🥛': 'nutrition-outline', // הוספה לדוגמה
+    '🍶': 'wine-outline',      // הוספה לדוגמה
+    '🥚': 'egg-outline'        // הוספה לדוגמה
+};
+
+// מיפוי עבור שמות קטגוריות שאינן מכילות אמוג'י
+const CATEGORY_ICONS = {
+    'הכל': 'grid-outline',
+    'מטבח': 'restaurant-outline',
+    'ירקות': 'leaf-outline',
+    'פירות': 'nutrition-outline',
+    'לחמים': 'baguette-outline',
+    'בגדים': 'shirt-outline',
+    'בריאות': 'fitness-outline',
+    'אחר': 'pricetag-outline',
+    'קפואים': 'snow-outline',
+    'תבלינים ושמנים': 'flask-outline',
+    'ניקיון': 'basket-outline',
+    'אלכוהול': 'wine-outline'
+};
+
+// פונקציית עזר: מפרידה את האמוג'י מהטקסט
+function extractEmojiAndName(category) {
+    if (!category || category.trim() === '') {
+        return { emoji: null, name: 'אחר' };
     }
- 
-    entries.forEach(entry => {
-        const categoryName = entry.target.dataset.category;
- 
-        if (entry.isIntersecting && entry.intersectionRatio > 0) {
-            // אם האלמנט נכנס לתצוגה או גלוי, הוא מסומן
-            setActiveCategory(categoryName);
-        } else if (!entry.isIntersecting && entry.boundingClientRect.top > 0) {
-            // אם האלמנט עזב את התצוגה לכיוון מטה
-            const prevCategoryElement = entry.target.previousElementSibling;
-            if (prevCategoryElement) {
-                const prevCategoryName = prevCategoryElement.dataset.category;
-                setActiveCategory(prevCategoryName);
-            }
-        }
-    });
- }
- 
- function setActiveCategory(categoryName) {
-    currentActiveCategory = categoryName;
+
+    // זיהוי אמוג'י באמצעות RegExp התומך באמוג'י מורכבים
+    const emojiRegex = /^([\p{Emoji}\p{Emoji_Component}\u{200D}\u{FE0F}\u{20E3}]+)\s*(.*)$/u;
+    const match = category.match(emojiRegex);
+
+    if (match && match[1]) {
+        return {
+            emoji: match[1], // האמוג'י שנמצא
+            name: match[2].replace(/[:]/g, '').trim() || 'אחר' // שם נקי ללא נקודתיים
+        };
+    }
+
+    // אם אין אמוג'י, השתמש בשם המלא
+    return {
+        emoji: null,
+        name: category.replace(/[:]/g, '').trim() || 'אחר'
+    };
+}
+
+// פונקציית סינון והסתרה/הצגה
+function filterListByCategory(categoryName) {
+    const allCategoryWrappers = container.querySelectorAll('.category-wrapper');
+
+    // הסר 'active' מכל הבועות
     categoryFilterWrapper.querySelectorAll('.category-bubble').forEach(b => {
         b.classList.remove('active');
     });
- 
-    const activeBubble = document.querySelector(`.category-bubble[data-category='${categoryName}']`);
+
+    // בצע סינון: עובר על כל עוטפי הקטגוריות
+    allCategoryWrappers.forEach(wrapper => {
+        const categoryData = wrapper.dataset.category;
+
+        if (categoryName === 'הכל' || categoryData === categoryName) {
+            wrapper.classList.remove('hidden'); // הצג קטגוריה ספציפית או הכל
+        } else {
+            wrapper.classList.add('hidden'); Chalo// הסתר קטגוריה אחרת
+        }
+    });
+
+    // סמן את הבועה הפעילה
+    const activeBubble = categoryFilterWrapper.querySelector(`.category-bubble[data-category='${categoryName}']`);
     if (activeBubble) {
         activeBubble.classList.add('active');
-        activeBubble.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'start' });
+        // גלילת הבועה לתוך התצוגה
+        activeBubble.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
     }
- }
- 
- async function fetchAndRenderList() {
+}
+
+// טעינת הנתונים מ-Google Sheets או Mock
+async function fetchAndRenderList() {
     if (isMockMode) {
-        allCategorizedItems = mockData;
-        renderCategoryFilters(allCategorizedItems);
-        renderList(allCategorizedItems);
-        if (currentUserId) {
-            loadUserShoppingList(currentUserId);
-        }
-        loadingSpinner.style.display = 'none';
+        // ... (Mock logic)
         return;
     }
- 
+
     try {
         const response = await fetch(sheetURL);
         const text = await response.text();
+        // טיפול בפורמט JSONP שחוזר מ-Google Sheets
         const json = JSON.parse(text.substr(47).slice(0, -2));
         const rows = json.table.rows.slice(1);
- 
+
         const categorizedItems = {};
-        
+
         rows.forEach(row => {
             const cells = row.c;
             if (cells.length < 3) return;
-            
+
             const category = cells[0]?.v;
             const item = cells[1]?.v;
             const type = cells[2]?.v;
- 
+
             if (category && item) {
                 if (!categorizedItems[category]) {
                     categorizedItems[category] = [];
@@ -161,67 +164,69 @@
                 categorizedItems[category].push({ item, type });
             }
         });
- 
+
         allCategorizedItems = categorizedItems;
         renderCategoryFilters(allCategorizedItems);
         renderList(allCategorizedItems);
- 
-        // Call the loading function here, after the list is rendered
+
+        // הפעלת הסינון הראשוני עם 'הכל'
+        filterListByCategory('הכל');
+
         if (currentUserId) {
             loadUserShoppingList(currentUserId);
         }
- 
+
         loadingSpinner.style.display = 'none';
- 
+
     } catch (err) {
-        loadingSpinner.textContent = '❌ שגיאה בטעינת הנתונים.';
-        console.error(err);
+        loadingSpinner.textContent = '❌ שגיאה בטעינת הנתונים. ודא שהקישור לגיליון תקין.';
+        console.error("שגיאה בטעינה מגיליון:", err);
     }
- }
- 
- function renderList(categorizedItems) {
+}
+
+// רינדור רשימת הקניות
+function renderList(categorizedItems) {
     container.innerHTML = '';
     for (const category in categorizedItems) {
         const categoryWrapper = document.createElement('div');
         categoryWrapper.className = 'category-wrapper';
         categoryWrapper.dataset.category = category;
-        
-        // הוסף את הקיזוז לגלילה בצורה מודרנית
-        categoryWrapper.style.scrollMarginTop = `${headerContainer.offsetHeight + 10}px`;
-        
+
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'category';
-        categoryDiv.textContent = category;
-        
+
+        // הצגת השם הנקי בלבד בכותרת הקטגוריה
+        const { name: cleanName } = extractEmojiAndName(category);
+        categoryDiv.textContent = cleanName.trim() === '' ? 'אחר' : cleanName;
+
         const card = document.createElement('div');
         card.className = 'item-card';
- 
+
         categorizedItems[category].forEach(itemObj => {
             const itemElement = createItemElement(itemObj, category);
             card.appendChild(itemElement);
         });
- 
+
         categoryWrapper.appendChild(categoryDiv);
         categoryWrapper.appendChild(card);
         container.appendChild(categoryWrapper);
- 
-        intersectionObserver.observe(categoryWrapper);
     }
- }
- 
- 
- function createItemElement(itemObj, category) {
+}
+
+// יצירת אלמנט פריט יחיד
+function createItemElement(itemObj, category) {
     const itemDiv = document.createElement('div');
     itemDiv.className = 'item';
-    
+
     const itemNameSpan = document.createElement('span');
     itemNameSpan.textContent = itemObj.item;
     itemNameSpan.className = 'item-name';
     itemDiv.appendChild(itemNameSpan);
- 
+
     const itemControlsDiv = document.createElement('div');
     itemControlsDiv.className = 'item-controls locked';
-    
+
+    // בקרת Toggle (Checkbox)
     const toggleSwitchContainer = document.createElement('label');
     toggleSwitchContainer.className = 'toggle-switch';
     const toggleInput = document.createElement('input');
@@ -232,7 +237,8 @@
     toggleSwitchContainer.appendChild(toggleInput);
     toggleSwitchContainer.appendChild(toggleSlider);
     itemControlsDiv.appendChild(toggleSwitchContainer);
-    
+
+    // בקרת כמות (Stepper)
     if (itemObj.type === 'כמות') {
         const stepperContainer = document.createElement('div');
         stepperContainer.className = 'quantity-stepper-container control';
@@ -243,12 +249,12 @@
         valueSpan.textContent = '1';
         const plusButton = document.createElement('button');
         plusButton.textContent = '+';
-        
+
         stepperContainer.appendChild(minusButton);
         stepperContainer.appendChild(valueSpan);
         stepperContainer.appendChild(plusButton);
         itemControlsDiv.appendChild(stepperContainer);
-        
+
         plusButton.addEventListener('click', () => {
             let currentValue = parseInt(valueSpan.textContent);
             if (currentValue < 10) {
@@ -271,14 +277,21 @@
                 }
             }
         });
-    } else if (itemObj.type === 'גודל') {
+    }
+    // בקרת גודל (Size Selector)
+    else if (itemObj.type === 'גודל') {
         const sizeOptions = ['S', 'M', 'L'];
         const sizeButtonsContainer = document.createElement('div');
         sizeButtonsContainer.className = 'size-buttons-container control';
-        sizeOptions.forEach(size => {
+        sizeOptions.forEach((size, index) => {
             const button = document.createElement('button');
             button.className = 'size-button';
             button.textContent = size;
+
+            if (index === 0) {
+                button.classList.add('active');
+            }
+
             button.addEventListener('click', () => {
                 sizeButtonsContainer.querySelectorAll('.size-button').forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
@@ -291,21 +304,39 @@
         });
         itemControlsDiv.appendChild(sizeButtonsContainer);
     }
- 
+
     itemDiv.appendChild(itemControlsDiv);
- 
+
+    // לוגיקת הוספה/הסרה לרשימה בעת שינוי Toggle
     toggleInput.addEventListener('change', (e) => {
         if (e.target.checked) {
             itemControlsDiv.classList.remove('locked');
+
             if (itemObj.type === 'כמות') {
                 const valueSpan = itemControlsDiv.querySelector('.stepper-value');
-                shoppingList[itemObj.item] = { category, quantity: `${valueSpan.textContent} יחידות` };
+                const quantity = valueSpan ? valueSpan.textContent : '1';
+                shoppingList[itemObj.item] = { category, quantity: `${quantity} יחידות` };
             } else if (itemObj.type === 'גודל') {
-                const activeSizeButton = itemControlsDiv.querySelector('.size-button.active');
-                shoppingList[itemObj.item] = { category, size: activeSizeButton ? activeSizeButton.textContent : 'S' };
+                let activeSizeButton = itemControlsDiv.querySelector('.size-button.active');
+                let size = 'S';
+
+                if (!activeSizeButton) {
+                    const defaultButton = itemControlsDiv.querySelector('.size-button');
+                    if (defaultButton) {
+                        defaultButton.classList.add('active');
+                        activeSizeButton = defaultButton;
+                    }
+                }
+
+                if (activeSizeButton) {
+                    size = activeSizeButton.textContent;
+                }
+
+                shoppingList[itemObj.item] = { category, size: size };
             } else {
                 shoppingList[itemObj.item] = { category };
             }
+
             if (currentUserId) saveShoppingList(currentUserId, shoppingList);
         } else {
             itemControlsDiv.classList.add('locked');
@@ -313,60 +344,81 @@
             if (currentUserId) saveShoppingList(currentUserId, shoppingList);
         }
     });
- 
+
     return itemDiv;
- }
- 
- function renderCategoryFilters(categorizedItems) {
+}
+
+// רינדור סרגלי הקטגוריות והוספת לוגיקת סינון
+function renderCategoryFilters(categorizedItems) {
     categoryFilterWrapper.innerHTML = '';
-    const categories = Object.keys(categorizedItems);
-    if (categories.length > 0) {
-        if (!currentActiveCategory) {
-            setActiveCategory(categories[0]);
-        }
-    }
- 
-    for (const category in categorizedItems) {
+
+    const allCategories = ['הכל', ...Object.keys(categorizedItems)];
+
+    allCategories.forEach(category => {
+        // 1. חילוץ האייקון והשם הנקי
+        const { emoji, name: cleanName } = extractEmojiAndName(category);
+        const displayCategory = cleanName.trim() === '' ? 'אחר' : cleanName;
+
+        // 2. יצירת הבועה
         const bubble = document.createElement('div');
-        bubble.className = 'category-bubble';
-        bubble.textContent = category;
+        bubble.className = 'category-bubble status-style';
         bubble.dataset.category = category;
+
+        // 3. בחירת צבע רנדומלי
+        const randomColor = COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)];
+        bubble.style.backgroundColor = randomColor.background;
+        bubble.style.color = randomColor.text;
+
+        // 4. בחירת האייקון
+        const iconName = EMOJI_TO_ICON[emoji] || CATEGORY_ICONS[displayCategory] || CATEGORY_ICONS['אחר'];
+
+        // 5. יצירת האייקון
+        const icon = document.createElement('ion-icon');
+        icon.setAttribute('name', iconName);
+        icon.className = 'category-icon';
+
+        // 6. יצירת הטקסט
+        const textSpan = document.createElement('span');
+        textSpan.textContent = displayCategory;
+        textSpan.className = 'category-text';
+
+        // 7. הוספת האייקון והטקסט לבועה
+        bubble.appendChild(icon);
+        bubble.appendChild(textSpan);
+
+        // 8. סימון 'הכל' כפעיל בהתחלה
+        if (category === 'הכל') {
+            bubble.classList.add('active');
+        }
+
         categoryFilterWrapper.appendChild(bubble);
-    }
-    
-    // בועה ראשונה כפעילה
-    const firstBubble = categoryFilterWrapper.querySelector('.category-bubble');
-    if (firstBubble) {
-        firstBubble.classList.add('active');
-    }
- 
+    });
+
+    // לוגיקת לחיצה על בועה
     categoryFilterWrapper.addEventListener('click', (event) => {
         const target = event.target;
-        if (target.classList.contains('category-bubble')) {
-            const selectedCategory = target.dataset.category;
-            
-            // עדכון הבועה הפעילה וגלילת סרגל הקטגוריות
-            setActiveCategory(selectedCategory);
- 
-            // גלילת רשימת הקניות אל הקטגוריה שנבחרה
-            const categoryElement = document.querySelector(`.category-wrapper[data-category='${selectedCategory}']`);
-            if (categoryElement) {
-                isProgrammaticScroll = true; // הפעלת הדגל
-                categoryElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
- 
-                // איפוס הדגל לאחר שהגלילה אמורה להסתיים
-                setTimeout(() => {
-                    isProgrammaticScroll = false;
-                }, 500);
-            }
+        const bubbleElement = target.closest('.category-bubble');
+
+        if (bubbleElement) {
+            const selectedCategory = bubbleElement.dataset.category;
+
+            // סינון והצגה/הסתרה
+            filterListByCategory(selectedCategory);
+
+            // גלילה למעלה
+            window.scrollTo({
+                top: headerContainer.offsetHeight,
+                behavior: 'smooth'
+            });
         }
     });
- }
- 
- shareIcon.addEventListener('click', async () => {
+}
+
+// לוגיקת שיתוף (Share)
+shareIcon.addEventListener('click', async () => {
     let message = "📋 רשימת קניות:\n\n";
     const categories = {};
- 
+
     for (const item in shoppingList) {
         const data = shoppingList[item];
         if (!categories[data.category]) {
@@ -380,12 +432,12 @@
         }
         categories[data.category].push(itemText);
     }
- 
+
     for (const cat in categories) {
         message += `*${cat}*\n`;
         message += categories[cat].join('\n') + '\n\n';
     }
- 
+
     if (navigator.share) {
         try {
             await navigator.share({
@@ -401,58 +453,61 @@
         window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
         console.log('Web Share API לא נתמך, נשלח לוואטסאפ.');
     }
- });
- 
- function updateUIWithSavedList(savedList) {
+});
+
+// עדכון ממשק המשתמש לפי רשימה שנשמרה
+function updateUIWithSavedList(savedList) {
     const itemNames = document.querySelectorAll('.item-name');
-    
+
     itemNames.forEach(itemNameSpan => {
         const itemText = itemNameSpan.textContent.trim();
         if (savedList[itemText]) {
             const itemElement = itemNameSpan.closest('.item');
             if (!itemElement) return;
- 
+
             const toggleInput = itemElement.querySelector('.toggle-switch input');
             const itemControlsDiv = itemElement.querySelector('.item-controls');
-            
+
             if (toggleInput) {
                 toggleInput.checked = true;
             }
             if (itemControlsDiv) {
                 itemControlsDiv.classList.remove('locked');
             }
- 
+
             const savedData = savedList[itemText];
             if (savedData.quantity) {
                 const valueSpan = itemElement.querySelector('.stepper-value');
-                const quantity = savedData.quantity.match(/\d+/)[0];
+                const quantityMatch = savedData.quantity.match(/\d+/);
+                const quantity = quantityMatch ? quantityMatch[0] : '1';
                 if (valueSpan) valueSpan.textContent = quantity;
             } else if (savedData.size) {
                 const sizeButtons = itemElement.querySelectorAll('.size-button');
                 sizeButtons.forEach(btn => {
+                    btn.classList.remove('active');
                     if (btn.textContent === savedData.size) {
                         btn.classList.add('active');
-                    } else {
-                        btn.classList.remove('active');
                     }
                 });
             }
         }
     });
- }
- 
- function saveShoppingList(userId, list) {
+}
+
+// שמירת רשימת הקניות ב-Firebase
+function saveShoppingList(userId, list) {
     const userDocRef = doc(db, "users", userId);
     setDoc(userDocRef, { shoppingList: list })
-    .then(() => {
-        console.log("רשימת קניות נשמרה בהצלחה!");
-    })
-    .catch(error => {
-        console.error("שגיאה בשמירת רשימת הקניות:", error);
-    });
- }
- 
- async function loadUserShoppingList(userId) {
+        .then(() => {
+            console.log("רשימת קניות נשמרה בהצלחה!");
+        })
+        .catch(error => {
+            console.error("שגיאה בשמירת רשימת הקניות:", error);
+        });
+}
+
+// טעינת רשימת הקניות מ-Firebase
+async function loadUserShoppingList(userId) {
     const userDocRef = doc(db, "users", userId);
     try {
         const docSnap = await getDoc(userDocRef);
@@ -469,17 +524,18 @@
     } catch (error) {
         console.error("שגיאה בקבלת נתונים:", error);
     }
- }
- 
- onAuthStateChanged(auth, (user) => {
+}
+
+// ניהול אימות משתמש (התחברות אנונימית)
+onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUserId = user.uid;
         console.log("משתמש מחובר עם מזהה:", currentUserId);
         fetchAndRenderList();
     } else {
         signInAnonymously(auth)
-          .catch(error => {
-            console.error("שגיאה בהתחברות אנונימית:", error);
-          });
+            .catch(error => {
+                console.error("שגיאה בהתחברות אנונימית:", error);
+            });
     }
- });
+});
