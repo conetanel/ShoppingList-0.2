@@ -21,6 +21,7 @@ html, body {
     top: 0;
     z-index: 100;
     background-color: #F2F4F7;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
 }
 
 /* Header and title styling */
@@ -31,7 +32,7 @@ html, body {
     direction: rtl;
     padding: 20px;
     background-color: #F2F4F7;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: none; 
 }
 
 .header h1 {
@@ -41,10 +42,6 @@ html, body {
     margin: 0;
     text-align: right;
     flex: 0 0 auto;
-}
-
-.flex-spacer {
-    display: none;
 }
 
 #share-icon {
@@ -70,9 +67,8 @@ html, body {
     padding-top: 15px;
 }
 
-/* New: Category Wrapper for scroll snap */
+/* Category wrapper: נשאר רק כמאגר ומזהה קטגוריה */
 .category-wrapper {
-    /* הוסר: scroll-snap-align: start; */
     padding-top: 20px;
 }
 
@@ -235,10 +231,6 @@ html, body {
     transform: translateX(20px);
 }
 
-.bottom-bar {
-    display: none;
-}
-
 .category-filter-container {
     overflow-x: auto;
     white-space: nowrap;
@@ -246,6 +238,7 @@ html, body {
     padding: 10px 0;
     position: relative;
     direction: rtl;
+    /* טשטוש בצדדים למראה מקצועי יותר */
     -webkit-mask-image: linear-gradient(to right,
         rgba(0,0,0,0) 0%,
         rgba(0,0,0,1) 10%,
@@ -259,55 +252,91 @@ html, body {
         rgba(0,0,0,0) 100%
     );
     
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    -ms-overflow-style: none; /* הסתרת סרגל גלילה ב-IE/Edge */
+    scrollbar-width: none; /* הסתרת סרגל גלילה ב-Firefox */
 }
 
 .category-filter-container::-webkit-scrollbar {
-    display: none;
+    display: none; /* הסתרת סרגל גלילה ב-Chrome/Safari */
 }
 
 .category-filter-wrapper {
     display: inline-flex;
-    gap: 10px;
+    gap: 15px; 
     padding: 0 15px;
-    /* הוסר: scroll-snap-type: x mandatory; */
     direction: rtl;
+    align-items: flex-start; 
 }
 
-.category-bubble {
-    display: inline-block;
-    padding: 8px 18px;
-    background-color: #e9e9ea;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    color: #333;
+/* ❗ חשוב: עיצוב הסטטוס המעודכן: מלבן אנכי */
+.category-bubble.status-style {
+    display: flex;
+    flex-direction: column; /* ארגון אנכי: אייקון למעלה, טקסט למטה */
+    justify-content: space-between; /* מרווח בין האייקון לטקסט */
+    align-items: center;
+    
+    width: 75px; /* מעט יותר רחב לטקסט ארוך */
+    height: 95px; /* גובה קבוע המאפשר 2 שורות */
+    
+    padding: 10px 5px 8px 5px; 
+    
+    border-radius: 14px; 
+    font-size: 0.8rem; 
+    font-weight: 500;
+    
     cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
     user-select: none;
-    /* הוסר: scroll-snap-align: start; */
+    
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); 
 }
 
-.category-bubble.active {
-    background-color: #007aff;
-    color: white;
+/* ❗ חשוב: עיצוב האייקון הגדול במרכז */
+.category-bubble .category-icon {
+    font-size: 2.8rem; /* הגדלה נוספת */
+    line-height: 1; 
+    flex-grow: 1; /* תופס את רוב המקום האנכי הפנוי */
+    display: flex;
+    align-items: center; /* מרכוז אנכי */
+    justify-content: center; /* מרכוז אופקי */
+    width: 100%;
 }
 
-/* The element that creates the fade effect */
-.content-fade-spacer {
-    height: 50px;
-    background: linear-gradient(
-        to bottom,
-        rgba(242, 244, 247, 0) 0%,
-        rgba(242, 244, 247, 1) 100%
-    );
+/* ❗ חשוב: עיצוב הטקסט הקטן בתחתית - תומך בשתי שורות */
+.category-bubble .category-text {
+    text-align: center;
+    width: 100%;
+    line-height: 1.2;
+    font-size: 0.8rem; /* ודא גודל קריא */
+    
+    /* ❗ כללי הקיטום החשובים: */
+    max-height: 2.4em; /* (1.2 line-height * 2 lines = 2.4em) */
+    overflow: hidden; 
+    display: -webkit-box; /* חובה עבור קיטום שורות */
+    -webkit-line-clamp: 2; /* מגביל לשתי שורות */
+    -webkit-box-orient: vertical;
+    
+    /* ודא שהטקסט אינו נכנס למודל ה-Flex בצורה משונה */
+    flex-shrink: 0;
+    flex-basis: auto;
 }
 
+/* 🆕 עיצוב מצב פעיל (Active) */
+.category-bubble.status-style.active {
+    border: 3px solid white; 
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3), 0 0 0 5px rgba(255, 255, 255, 0.8);
+    transform: scale(1.02);
+}
+
+/* קלאס חיוני להסתרת קטגוריות */
+.hidden {
+    display: none !important;
+}
+
+/* תיקוני Safe Area */
 .header { padding-top: calc(20px + env(safe-area-inset-top)); }
-.footer { padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
 body { background-color: #f2f2f7; }
 
-/* fix for safari safe areas */
 body {
     padding-top: constant(safe-area-inset-top);
     padding-top: env(safe-area-inset-top);
