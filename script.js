@@ -19,13 +19,21 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// מניעת גלילה אנכית כאשר מתמקדים בסרגל
+const categoryFilterContainer = document.querySelector('.category-filter-container');
+categoryFilterContainer.addEventListener('wheel', (e) => {
+    if (e.deltaY !== 0) { // בטל גלילה אנכית
+        e.preventDefault();
+    }
+}, { passive: false });
+
 // משתנים גלובליים
 let shoppingList = {};
 let allCategorizedItems = {};
 let currentUserId = null;
 
 // המשתנים של ה-DOM
-const container = document.getElementById('shopping-list-container');
+const container = document.getElementById('shopping-list-container'); // רשימת הפריטים
 const loadingSpinner = document.getElementById('loading-spinner');
 const shareIcon = document.getElementById('share-icon');
 const categoryFilterWrapper = document.querySelector('.category-filter-wrapper');
@@ -37,11 +45,12 @@ const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx
 
 // פלטת צבעים חדשה עם הצבעים שבחרת
 const COLOR_PALETTE = [
-    { background: '#213F4D', text: '#ffffff' }, // 1 - כהה-כחול
-    { background: '#2FA098', text: '#ffffff' }, // 2 - טורקיז
-    { background: '#E6C56E', text: '#000000' }, // 3 - צהוב-חול
-    { background: '#E9A466', text: '#000000' }, // 4 - כתום-בהיר
-    { background: '#DD694A', text: '#ffffff' }, // 5 - כתום-אדמדם
+   
+    { background: '#2FA098', text: '#ffffff' }, // 1 - טורקיז
+    { background: '#E6C56E', text: '#000000' }, // 2 - צהוב-חול
+    { background: '#E9A466', text: '#000000' }, // 3 - כתום-בהיר
+    { background: '#DD694A', text: '#ffffff' }, // 4 - כתום-אדמדם
+     { background: '#213F4D', text: '#ffffff' }, // 5 - כהה-כחול
 ];
 
 // מיפוי קטגוריות לצבעים קבועים
@@ -56,17 +65,48 @@ const CATEGORY_ICONS = {
     'ירקות עלים ירוקים': 'leaf-outline',
     'פירות': 'nutrition-outline',
     'לחמים ואפייה': 'browsers-outline',
-    'מוצרי חלב': 'beaker-outline', // שינוי ל-aiיקון מתאים יותר
+    'מוצרי חלב': 'beaker-outline',
     'ביצים': 'egg-outline',
-    'בשר ודגים': 'fish-outline', // שינוי ל-aiיקון מתאים יותר (אם קיים, אחרת נשאר fish-outline)
+    'בשר ודגים': 'fish-outline',
     'קפואים': 'snow-outline',
-    'מזווה': 'cube-outline', // שינוי ל-aiיקון מתאים יותר
+    'מזווה': 'cube-outline',
     'תבלינים ושמנים': 'flask-outline',
     'שבת ומתוקים': 'ice-cream-outline',
     'ניקיון והיגיינה': 'water-outline',
-    'חד פעמי ותבניות': 'restaurant-outline', // שינוי ל-aiיקון מתאים יותר
+    'חד פעמי ותבניות': 'restaurant-outline',
     'אחר': 'pricetag-outline'
 };
+
+
+// פונקציית עזר: מבהירה צבע על ידי הגברת ערכי RGB
+function lightenColor(color, percent) {
+    console.log('Original color:', color); // דיבאגינג
+    let r, g, b;
+    if (color.startsWith('#')) {
+        // המרת צבע Hex ל-RGB
+        r = parseInt(color.substr(1, 2), 16);
+        g = parseInt(color.substr(3, 2), 16);
+        b = parseInt(color.substr(5, 2), 16);
+    } else if (color.startsWith('rgb')) {
+        // המרת צבע RGB או RGBA ל-RGB
+        const rgbValues = color.match(/\d+/g);
+        if (rgbValues && rgbValues.length >= 3) {
+            r = parseInt(rgbValues[0]);
+            g = parseInt(rgbValues[1]);
+            b = parseInt(rgbValues[2]);
+        } else {
+            console.error('Invalid RGB color format:', color);
+            return color; // החזר את הצבע המקורי אם הפורמט לא תקין
+        }
+    }
+    // הגברת הערכים ב-percentage
+    r = Math.min(255, Math.floor(r + (255 - r) * percent));
+    g = Math.min(255, Math.floor(g + (255 - g) * percent));
+    b = Math.min(255, Math.floor(b + (255 - b) * percent));
+    const lightened = `rgb(${r}, ${g}, ${b})`;
+    console.log('Lightened color:', lightened); // דיבאגינג
+    return lightened;
+}
 
 // פונקציית עזר: מפרידה את האמוג'י מהטקסט ומתאימה לקטגוריות
 function extractEmojiAndName(category) {
@@ -78,23 +118,23 @@ function extractEmojiAndName(category) {
     const match = category.match(emojiRegex);
 
     if (match && match[1]) {
-        let name = match[2].replace(/[:]/g, '').trim(); // מסיר דו-נקות ורווחים
-        console.log('Extracted name:', name); // דיבאגינג
+        let name = match[2].replace(/[:]/g, '').trim();
+        console.log('Extracted name:', name);
         return {
             emoji: match[1],
             name: name || 'אחר'
         };
     }
 
-    let name = category.replace(/[:]/g, '').trim(); // מסיר דו-נקות ורווחים
-    console.log('Extracted name (no emoji):', name); // דיבאגינג
+    let name = category.replace(/[:]/g, '').trim();
+    console.log('Extracted name (no emoji):', name);
     return {
         emoji: null,
         name: name || 'אחר'
     };
 }
 
-// פונקציית סינון והסתרה/הצגה
+// פונקציית סינון והסתרה/הצגה עם עדכון צבע
 function filterListByCategory(categoryName) {
     console.log('Filtering by category:', categoryName);
 
@@ -116,21 +156,40 @@ function filterListByCategory(categoryName) {
     const activeBubble = categoryFilterWrapper.querySelector(`.category-bubble[data-category='${categoryName}']`);
     if (activeBubble) {
         activeBubble.classList.add('active');
-        const container = categoryFilterWrapper.parentElement;
-        const containerWidth = container.offsetWidth;
+        const containerWidth = categoryFilterWrapper.parentElement.offsetWidth;
         const bubbleWidth = activeBubble.offsetWidth;
         const bubbleOffset = activeBubble.offsetLeft;
         const scrollPosition = bubbleOffset - (containerWidth - bubbleWidth) / 2;
 
         console.log('Snap debug:', { containerWidth, bubbleWidth, bubbleOffset, scrollPosition });
 
-        container.scrollTo({
+        categoryFilterWrapper.parentElement.scrollTo({
             left: scrollPosition,
             behavior: 'smooth'
         });
+
+        // שליפת צבע הרקע של הכפתור הפעיל והבהרתו
+        const bgColor = window.getComputedStyle(activeBubble).backgroundColor;
+        const lightenedColor = lightenColor(bgColor, 0.5); // 50% בהירות
+        const headerColor = '#F2F4F7'; // צבע ראש העמוד
+        const gradient = `linear-gradient(to bottom, ${headerColor}, ${lightenedColor})`; // גרידיאנט לרקע הסרגל
+        const bottomGradient = `linear-gradient(to bottom, ${lightenedColor}, transparent)`; // גרידיאנט תחתון רך
+
+        const filterContainer = categoryFilterWrapper.parentElement;
+        filterContainer.style.background = gradient; // עדכון הרקע של הסרגל
+        filterContainer.style.position = 'relative'; // ודא שהמיקום יחסי עבור ה-after
+        filterContainer.style.zIndex = '10'; // מעל התוכן
+        filterContainer.style.setProperty('--bottom-gradient', bottomGradient); // הגדרת הגרידיאנט התחתון
+
+        document.body.style.backgroundColor = lightenedColor; // עדכון הרקע של העמוד
+    } else {
+        // איפוס הצבעים לברירת מחדל אם אין כפתור פעיל
+        const filterContainer = categoryFilterWrapper.parentElement;
+        filterContainer.style.background = 'none';
+        filterContainer.style.removeProperty('--bottom-gradient');
+        document.body.style.backgroundColor = '#F2F4F7';
     }
 }
-
 // טעינת הנתונים מ-Google Sheets או Mock
 async function fetchAndRenderList() {
     if (isMockMode) {
@@ -215,6 +274,40 @@ function renderList(categorizedItems) {
         container.appendChild(categoryWrapper);
     }
 }
+function createIconToggle(initialActive = false, onChange) {
+    const btn = document.createElement('button');
+    btn.className = 'icon-toggle';
+    btn.type = 'button';
+    btn.setAttribute('aria-pressed', initialActive ? 'true' : 'false');
+
+    const addIcon = document.createElement('ion-icon');
+    addIcon.setAttribute('name', 'add-circle-outline');
+    addIcon.className = 'icon-add';
+
+    const checkIcon = document.createElement('ion-icon');
+    checkIcon.setAttribute('name', 'checkmark-circle');
+    checkIcon.className = 'icon-check';
+
+    btn.appendChild(addIcon);
+    btn.appendChild(checkIcon);
+
+    if (initialActive) btn.classList.add('active');
+
+    btn.addEventListener('click', () => {
+        const active = !btn.classList.contains('active');
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+
+        // אנימציית “פופ” + ריפל
+        btn.classList.add('pop', 'ripple');
+        setTimeout(() => btn.classList.remove('pop'), 240);
+        setTimeout(() => btn.classList.remove('ripple'), 320);
+
+        if (typeof onChange === 'function') onChange(active);
+    });
+
+    return btn;
+}
 
 // יצירת אלמנט פריט יחיד
 function createItemElement(itemObj, category) {
@@ -226,19 +319,37 @@ function createItemElement(itemObj, category) {
     itemNameSpan.className = 'item-name';
     itemDiv.appendChild(itemNameSpan);
 
-    const itemControlsDiv = document.createElement('div');
-    itemControlsDiv.className = 'item-controls locked';
+const itemControlsDiv = document.createElement('div');
+itemControlsDiv.className = 'item-controls locked';
 
-    const toggleSwitchContainer = document.createElement('label');
-    toggleSwitchContainer.className = 'toggle-switch';
-    const toggleInput = document.createElement('input');
-    toggleInput.type = 'checkbox';
-    toggleInput.checked = false;
-    const toggleSlider = document.createElement('span');
-    toggleSlider.className = 'slider round';
-    toggleSwitchContainer.appendChild(toggleInput);
-    toggleSwitchContainer.appendChild(toggleSlider);
-    itemControlsDiv.appendChild(toggleSwitchContainer);
+// כפתור האייקון החדש במקום ה-toggle
+const iconToggle = createIconToggle(false, (isActive) => {
+    if (isActive) {
+    itemControlsDiv.classList.remove('locked');
+    itemControlsDiv.classList.add('show-controls'); // ✅ מציג את הסטפרים/גדלים
+
+    if (itemObj.type === 'כמות') {
+        const valueSpan = itemControlsDiv.querySelector('.stepper-value');
+        const quantity = valueSpan ? valueSpan.textContent : '1';
+        shoppingList[itemObj.item] = { category, quantity: `${quantity} יחידות` };
+    } else if (itemObj.type === 'גודל') {
+        const activeSizeButton = itemControlsDiv.querySelector('.size-button.active');
+        const size = activeSizeButton ? activeSizeButton.textContent : 'S';
+        shoppingList[itemObj.item] = { category, size };
+    } else {
+        shoppingList[itemObj.item] = { category };
+    }
+    if (currentUserId) saveShoppingList(currentUserId, shoppingList);
+} else {
+    itemControlsDiv.classList.add('locked');
+    itemControlsDiv.classList.remove('show-controls'); // ❌ מסתיר שוב
+    delete shoppingList[itemObj.item];
+    if (currentUserId) saveShoppingList(currentUserId, shoppingList);
+}
+
+});
+
+itemControlsDiv.appendChild(iconToggle);
 
     if (itemObj.type === 'כמות') {
         const stepperContainer = document.createElement('div');
@@ -261,7 +372,7 @@ function createItemElement(itemObj, category) {
             if (currentValue < 10) {
                 currentValue++;
                 valueSpan.textContent = currentValue;
-                if (toggleInput.checked) {
+                if (itemControlsDiv.querySelector('.icon-toggle')?.classList.contains('active')) {
                     shoppingList[itemObj.item] = { category, quantity: `${currentValue} יחידות` };
                     if (currentUserId) saveShoppingList(currentUserId, shoppingList);
                 }
@@ -272,7 +383,7 @@ function createItemElement(itemObj, category) {
             if (currentValue > 1) {
                 currentValue--;
                 valueSpan.textContent = currentValue;
-                if (toggleInput.checked) {
+                if (itemControlsDiv.querySelector('.icon-toggle')?.classList.contains('active')) {
                     shoppingList[itemObj.item] = { category, quantity: `${currentValue} יחידות` };
                     if (currentUserId) saveShoppingList(currentUserId, shoppingList);
                 }
@@ -294,7 +405,7 @@ function createItemElement(itemObj, category) {
             button.addEventListener('click', () => {
                 sizeButtonsContainer.querySelectorAll('.size-button').forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
-                if (toggleInput.checked) {
+                if (itemControlsDiv.querySelector('.icon-toggle')?.classList.contains('active')) {
                     shoppingList[itemObj.item] = { category, size: button.textContent };
                     if (currentUserId) saveShoppingList(currentUserId, shoppingList);
                 }
@@ -305,43 +416,6 @@ function createItemElement(itemObj, category) {
     }
 
     itemDiv.appendChild(itemControlsDiv);
-
-    toggleInput.addEventListener('change', (e) => {
-        if (e.target.checked) {
-            itemControlsDiv.classList.remove('locked');
-
-            if (itemObj.type === 'כמות') {
-                const valueSpan = itemControlsDiv.querySelector('.stepper-value');
-                const quantity = valueSpan ? valueSpan.textContent : '1';
-                shoppingList[itemObj.item] = { category, quantity: `${quantity} יחידות` };
-            } else if (itemObj.type === 'גודל') {
-                let activeSizeButton = itemControlsDiv.querySelector('.size-button.active');
-                let size = 'S';
-
-                if (!activeSizeButton) {
-                    const defaultButton = itemControlsDiv.querySelector('.size-button');
-                    if (defaultButton) {
-                        defaultButton.classList.add('active');
-                        activeSizeButton = defaultButton;
-                    }
-                }
-
-                if (activeSizeButton) {
-                    size = activeSizeButton.textContent;
-                }
-
-                shoppingList[itemObj.item] = { category, size: size };
-            } else {
-                shoppingList[itemObj.item] = { category };
-            }
-
-            if (currentUserId) saveShoppingList(currentUserId, shoppingList);
-        } else {
-            itemControlsDiv.classList.add('locked');
-            delete shoppingList[itemObj.item];
-            if (currentUserId) saveShoppingList(currentUserId, shoppingList);
-        }
-    });
 
     return itemDiv;
 }
@@ -467,15 +541,16 @@ function updateUIWithSavedList(savedList) {
             const itemElement = itemNameSpan.closest('.item');
             if (!itemElement) return;
 
-            const toggleInput = itemElement.querySelector('.toggle-switch input');
-            const itemControlsDiv = itemElement.querySelector('.item-controls');
+          const itemControlsDiv = itemElement.querySelector('.item-controls');
+const iconBtn = itemElement.querySelector('.icon-toggle');
+if (iconBtn) {
+    iconBtn.classList.add('active');
+    iconBtn.setAttribute('aria-pressed', 'true');
+}
+if (itemControlsDiv) {
+    itemControlsDiv.classList.remove('locked');
+}
 
-            if (toggleInput) {
-                toggleInput.checked = true;
-            }
-            if (itemControlsDiv) {
-                itemControlsDiv.classList.remove('locked');
-            }
 
             const savedData = savedList[itemText];
             if (savedData.quantity) {
