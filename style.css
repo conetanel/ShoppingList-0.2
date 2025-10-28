@@ -20,7 +20,7 @@ html, body {
     position: sticky;
     top: 0;
     z-index: 100;
-    background-color: #F2F4F7;
+    background-color:var(--header-bg);
     box-shadow: none; 
 }
 
@@ -31,7 +31,7 @@ html, body {
     justify-content: space-between;
     direction: rtl;
     padding: 20px;
-    background-color: #F2F4F7;
+    background-color:var(--header-bg);
     box-shadow: none; 
 }
 
@@ -233,6 +233,7 @@ html, body {
 
 .category-filter-container {
     overflow-x: auto;
+    overflow-y: hidden;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
     padding: 10px 0;
@@ -357,7 +358,7 @@ body {
 
 .item-controls .icon-toggle ion-icon {
     position: absolute;
-    font-size: 28px;
+    font-size: 30px;
     transition: opacity 140ms ease, transform 140ms ease;
     will-change: opacity, transform;
     line-height: 1;
@@ -472,4 +473,16 @@ body {
     pointer-events: auto;
     transform: scale(1);
 }
+:root {
+  --category-label: #111; /* ברירת מחדל קריאה */
+}
 
+/* זה מחליף את ה-#8e8e93 שהיה לך */
+.category {
+  color: var(--category-label);
+}
+
+/* אופציונלי: עזרה קטנה לקריאות */
+.category-bubble .category-text{
+  text-shadow: 0 1px 1px rgba(0,0,0,.15);
+}
