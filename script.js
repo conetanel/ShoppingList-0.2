@@ -46,11 +46,11 @@ const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx
 // פלטת צבעים חדשה עם הצבעים שבחרת
 const COLOR_PALETTE = [
    
-    { background: '#2FA098', text: '#ffffff' }, // 1 - טורקיז
+    { background: '#2fa062', text: '#ffffff' }, // 1 - טורקיז
     { background: '#E6C56E', text: '#000000' }, // 2 - צהוב-חול
     { background: '#E9A466', text: '#000000' }, // 3 - כתום-בהיר
     { background: '#DD694A', text: '#ffffff' }, // 4 - כתום-אדמדם
-     { background: '#213F4D', text: '#ffffff' }, // 5 - כהה-כחול
+     { background: '#0b597d', text: '#ffffff' }, // 5 - כהה-כחול
 ];
 
 // מיפוי קטגוריות לצבעים קבועים
@@ -134,6 +134,26 @@ function extractEmojiAndName(category) {
     };
 }
 
+function applyPageGradientToHeaderStart(baseColor, lightenedColor) {
+  // "תחילת סרגל הקטגוריות" = סוף ה-Header
+  const headerEl = document.querySelector('.header');
+  if (!headerEl) return;
+
+  const stopPx = Math.round(headerEl.offsetHeight); // גובה הכותרת בפיקסלים
+  const blend = 120; // כמה עדין לעשות את המעבר (אפשר לשחק: 60–160)
+
+  const gradient = `linear-gradient(
+    to bottom,
+    ${lightenedColor} 0px,
+    ${lightenedColor} ${stopPx}px,
+    ${baseColor} ${stopPx + blend}px,
+    ${baseColor} 100%
+  )`;
+
+  document.body.style.background = gradient;
+  document.body.style.backgroundAttachment = 'scroll'; // אפשר 'fixed' אם אוהבים פרלקס עדין
+}
+
 // פונקציית סינון והסתרה/הצגה עם עדכון צבע
 function filterListByCategory(categoryName) {
     console.log('Filtering by category:', categoryName);
@@ -154,41 +174,104 @@ function filterListByCategory(categoryName) {
     });
 
     const activeBubble = categoryFilterWrapper.querySelector(`.category-bubble[data-category='${categoryName}']`);
-    if (activeBubble) {
-        activeBubble.classList.add('active');
-        const containerWidth = categoryFilterWrapper.parentElement.offsetWidth;
-        const bubbleWidth = activeBubble.offsetWidth;
-        const bubbleOffset = activeBubble.offsetLeft;
-        const scrollPosition = bubbleOffset - (containerWidth - bubbleWidth) / 2;
+if (activeBubble) {
+  activeBubble.classList.add('active');
 
-        console.log('Snap debug:', { containerWidth, bubbleWidth, bubbleOffset, scrollPosition });
+  // סנאפ לבועה
+  const containerWidth = categoryFilterWrapper.parentElement.offsetWidth;
+  const bubbleWidth = activeBubble.offsetWidth;
+  const bubbleOffset = activeBubble.offsetLeft;
+  const scrollPosition = bubbleOffset - (containerWidth - bubbleWidth) / 2;
+  categoryFilterWrapper.parentElement.scrollTo({ left: scrollPosition, behavior: 'smooth' });
 
-        categoryFilterWrapper.parentElement.scrollTo({
-            left: scrollPosition,
-            behavior: 'smooth'
-        });
+  // 🎨 צבעים
+  const baseColor = window.getComputedStyle(activeBubble).backgroundColor; // צבע מקורי של הבועה
+  const lightenedColor = lightenColor(baseColor, 0.5);                     // הצבע המואר לראש
 
-        // שליפת צבע הרקע של הכפתור הפעיל והבהרתו
-        const bgColor = window.getComputedStyle(activeBubble).backgroundColor;
-        const lightenedColor = lightenColor(bgColor, 0.5); // 50% בהירות
-        const headerColor = '#F2F4F7'; // צבע ראש העמוד
-        const gradient = `linear-gradient(to bottom, ${headerColor}, ${lightenedColor})`; // גרידיאנט לרקע הסרגל
-        const bottomGradient = `linear-gradient(to bottom, ${lightenedColor}, transparent)`; // גרידיאנט תחתון רך
+  // ההדר + הסרגל באחיד
+  document.documentElement.style.setProperty('--header-bg', lightenedColor);
+  const filterContainer = categoryFilterWrapper.parentElement;
+  filterContainer.style.backgroundColor = lightenedColor;
+  filterContainer.style.setProperty('--bottom-gradient', `linear-gradient(to bottom, ${lightenedColor}, transparent)`);
 
-        const filterContainer = categoryFilterWrapper.parentElement;
-        filterContainer.style.background = gradient; // עדכון הרקע של הסרגל
-        filterContainer.style.position = 'relative'; // ודא שהמיקום יחסי עבור ה-after
-        filterContainer.style.zIndex = '10'; // מעל התוכן
-        filterContainer.style.setProperty('--bottom-gradient', bottomGradient); // הגדרת הגרידיאנט התחתון
+  // ✅ שהמעבר יסתיים עד תחילת התוכן: משתמשים בגובה כל ה-sticky (כותרת + סרגל)
+  const stickyHeight = Math.round(headerContainer.offsetHeight); // #sticky-header-container
+  const blend = 120; // עדינות המעבר (אפשר לשחק: 80–160)
 
-        document.body.style.backgroundColor = lightenedColor; // עדכון הרקע של העמוד
-    } else {
-        // איפוס הצבעים לברירת מחדל אם אין כפתור פעיל
-        const filterContainer = categoryFilterWrapper.parentElement;
-        filterContainer.style.background = 'none';
-        filterContainer.style.removeProperty('--bottom-gradient');
-        document.body.style.backgroundColor = '#F2F4F7';
-    }
+  const pageGradient = `linear-gradient(
+    to bottom,
+    ${lightenedColor} 0px,
+    ${lightenedColor} ${stickyHeight}px,
+    ${baseColor} ${stickyHeight + blend}px,
+    ${baseColor} 100%
+  )`;
+
+  // רקע הדף: הגרדיאנט שמסתיים מתחת ל-sticky, אז לא רואים "שבירה"
+  document.body.style.background = pageGradient;
+  document.body.style.backgroundAttachment = 'scroll'; // אפשר 'fixed' לאפקט פרלקס עדין
+
+} else {
+  // איפוס מלא
+  const filterContainer = categoryFilterWrapper.parentElement;
+  filterContainer.style.background = 'none';
+  filterContainer.style.removeProperty('--bottom-gradient');
+
+  document.documentElement.style.setProperty('--header-bg', '#F2F4F7');
+  document.body.style.background = '#F2F4F7';
+}
+
+
+
+}
+// פונקציה חדשה: עדכון ה-UI על בסיס רשימת הקניות השמורה
+function updateUIFromShoppingList() {
+    console.log('עדכון ממשק משתמש על בסיס רשימת קניות נטענת...');
+
+    // סריקה של כל הפריטים ב-DOM
+    const allItems = container.querySelectorAll('.item');
+
+    allItems.forEach(itemDiv => {
+        const itemName = itemDiv.querySelector('.item-name')?.textContent;
+        const controlsDiv = itemDiv.querySelector('.item-controls');
+        const iconToggle = controlsDiv?.querySelector('.icon-toggle');
+
+        if (!itemName || !controlsDiv || !iconToggle) return;
+
+        // 1. בדיקה אם הפריט קיים ברשימה השמורה
+        const savedItemData = shoppingList[itemName];
+
+        if (savedItemData) {
+            // ✅ הפריט קיים: הפעלת ה-Toggle והצגת הפקדים
+            iconToggle.classList.add('active');
+            iconToggle.setAttribute('aria-pressed', 'true');
+            controlsDiv.classList.remove('locked'); // שחרור הנעילה
+            controlsDiv.classList.add('show-controls'); // הצגת הפקדים
+
+            // 2. עדכון הכמות או הגודל
+            if (savedItemData.quantity) { // טיפול בכמות
+                const valueSpan = controlsDiv.querySelector('.stepper-value');
+                // משיכת הערך המספרי בלבד מתוך 'X יחידות'
+                const quantityMatch = savedItemData.quantity.match(/^(\d+)/);
+                if (valueSpan && quantityMatch) {
+                    valueSpan.textContent = quantityMatch[1];
+                }
+            } else if (savedItemData.size) { // טיפול בגודל
+                const sizeButtons = controlsDiv.querySelectorAll('.size-button');
+                sizeButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.textContent === savedItemData.size) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+
+        } else {
+            // ❌ הפריט לא קיים: הבטחת מצב ברירת מחדל (שני הקלאסים כבר אמורים להיות במצב זה)
+            iconToggle.classList.remove('active');
+            controlsDiv.classList.add('locked');
+            controlsDiv.classList.remove('show-controls');
+        }
+    });
 }
 // טעינת הנתונים מ-Google Sheets או Mock
 async function fetchAndRenderList() {
@@ -594,6 +677,7 @@ async function loadUserShoppingList(userId) {
                 shoppingList = data.shoppingList;
                 updateUIWithSavedList(shoppingList);
                 console.log("רשימת קניות נטענה:", shoppingList);
+                updateUIFromShoppingList();
             }
         } else {
             console.log("לא נמצאה רשימה שמורה למשתמש זה.");
