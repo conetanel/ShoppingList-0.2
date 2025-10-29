@@ -327,9 +327,9 @@ async function fetchAndRenderList() {
 }
 window.addEventListener("resize", updateStickyHeightVar, { passive: true });
 // רענון שקט בעת חזרה לאונליין
-window.addEventListener('online', () => {
-  // תרענן את כותרות/קטגוריות מהשיטס ותעדכן UI
-  fetchAndRenderList();
+window.addEventListener('online', async () => {
+  await fetchAndRenderList();
+  if (currentUserId) await loadUserShoppingList(currentUserId);
 });
 // רינדור רשימת הקניות
 function renderList(categorizedItems) {
@@ -621,7 +621,12 @@ function updateUIWithSavedList(savedList) {
           btn.classList.remove("active");
           if (btn.textContent === savedData.size) btn.classList.add("active");
         });
+        if (itemControlsDiv) {
+         itemControlsDiv.classList.remove("locked");
+         itemControlsDiv.classList.add("show-controls"); // ✅ חשוב לחשיפה ויזואלית
+        }
       }
+      
     }
   });
 }
@@ -655,31 +660,26 @@ async function loadUserShoppingList(userId) {
   }
 }
 
-/* ===============================
-   🚀 שינוי מרכזי: אתחול טעינה מיידי
-   =============================== */
 
-// 1) נטען את הרשימה מיד עם עליית האפליקציה (לא תלוי ב-Auth)
-fetchAndRenderList();
 
-// 2) ה-Auth נטען בנפרד: אם יש משתמש נטען רשימה שמורה; אם לא – נתחבר אנונימית.
-//    ה-UI ממשיך לעבוד גם אם ההתחברות נכשלה.
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUserId = user.uid;
     console.log("משתמש מחובר עם מזהה:", currentUserId);
 
-    // ✅ ננסה לפתוח מיד מהקאש – בלי מסך המתנה
+    // 1) אם יש קאש מקומי של קטגוריות – בנה UI מייד
     const hadCache = quickStartFromCache();
 
-    // תמיד מרעננים מהשרת ברקע
-    fetchAndRenderList();
+    // 2) אם כבר יש UI מהקאש – משוך את הרשימה השמורה והדבק אותה עליו
+    await loadUserShoppingList(currentUserId);
 
-    // אם **אין** קאש – משאירים “טוען...”
-    if (!hadCache) {
-      loadingSpinner.style.display = 'block';
-    }
+    // 3) תמיד מרעננים את הקטלוג מהשיטס (רינדור חדש)
+    await fetchAndRenderList();
 
+    // 4) שוב מדביקים את הרשימה על הרינדור הטרי (מונע מצב מרוץ)
+    await loadUserShoppingList(currentUserId);
+
+    loadingSpinner.style.display = 'none';
   } else {
     signInAnonymously(auth).catch(error => {
       console.error("שגיאה בהתחברות אנונימית:", error);
