@@ -1,7 +1,14 @@
 /* Firebase SDK imports */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  enableIndexedDbPersistence
+} from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
 
 // אובייקט firebaseConfig הייחודי שלך
 const firebaseConfig = {
