@@ -38,6 +38,35 @@ let shoppingList = {};
 let allCategorizedItems = {};
 let currentUserId = null;
 
+
+// --- LOCAL CACHE FOR INSTANT START ---
+const CACHE_KEY = 'cachedCategorizedItemsV1';
+
+function saveCategoriesCache(data) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch(_){}
+}
+
+function loadCategoriesCache() {
+  try {
+    const s = localStorage.getItem(CACHE_KEY);
+    return s ? JSON.parse(s) : null;
+  } catch(_) { return null; }
+}
+
+function quickStartFromCache() {
+  const cached = loadCategoriesCache();
+  if (!cached) return false;
+
+  allCategorizedItems = cached;
+  renderCategoryFilters(allCategorizedItems);
+  renderList(allCategorizedItems);
+  filterListByCategory('הכל');
+  updateStickyHeightVar();
+  loadingSpinner.style.display = 'none';
+  return true;
+}
+
+
 // המשתנים של ה-DOM
 const container = document.getElementById("shopping-list-container"); // רשימת הפריטים
 const loadingSpinner = document.getElementById("loading-spinner");
@@ -276,6 +305,7 @@ async function fetchAndRenderList() {
     });
 
     allCategorizedItems = categorizedItems;
+    saveCategoriesCache(allCategorizedItems); // ✅ שומר לשימוש בהפעלה הבאה
     renderCategoryFilters(allCategorizedItems);
     renderList(allCategorizedItems);
 
@@ -628,12 +658,23 @@ fetchAndRenderList();
 onAuthStateChanged(auth, (user) => {
   if (user) {
     currentUserId = user.uid;
-    console.log("משתמש מחובר:", currentUserId);
-    loadUserShoppingList(currentUserId);
+    console.log("משתמש מחובר עם מזהה:", currentUserId);
+
+    // ✅ ננסה לפתוח מיד מהקאש – בלי מסך המתנה
+    const hadCache = quickStartFromCache();
+
+    // תמיד מרעננים מהשרת ברקע
+    fetchAndRenderList();
+
+    // אם **אין** קאש – משאירים “טוען...”
+    if (!hadCache) {
+      loadingSpinner.style.display = 'block';
+    }
+
   } else {
-    signInAnonymously(auth).catch((error) => {
+    signInAnonymously(auth).catch(error => {
       console.error("שגיאה בהתחברות אנונימית:", error);
-      // ממשיכים לעבוד ללא משתמש – הנתונים מהגיליון כבר נטענו
     });
   }
 });
+
