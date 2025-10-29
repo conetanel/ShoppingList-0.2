@@ -39,29 +39,7 @@ const shareIcon = document.getElementById('share-icon');
 const categoryFilterWrapper = document.querySelector('.category-filter-wrapper');
 const headerContainer = document.getElementById('sticky-header-container');
 
-function lockRubberBand(el){
-  let startY = 0;
-  el.addEventListener('touchstart', (e) => {
-    if (e.touches && e.touches.length) startY = e.touches[0].clientY;
-  }, { passive: true });
 
-  el.addEventListener('touchmove', (e) => {
-    const sc = el.scrollTop;
-    const atTop = sc <= 0;
-    const atBottom = Math.ceil(sc + el.clientHeight) >= el.scrollHeight;
-
-    const currY = e.touches[0].clientY;
-    const isPanningDown = currY > startY;
-    const isPanningUp   = currY < startY;
-
-    if ((atTop && isPanningDown) || (atBottom && isPanningUp)) {
-      e.preventDefault(); // מונע משיכת יתר של הדף עצמו
-    }
-  }, { passive: false });
-}
-
-// הפעלה:
-lockRubberBand(container);
 
 function updateStickyHeightVar(){
   const h = headerContainer.offsetHeight; // גובה כל הסטיקי (כותרת+סרגל)
@@ -248,7 +226,7 @@ if (activeBubble) {
   document.body.style.background = '#F2F4F7';
 }
 
-
+requestAnimationFrame(() => updateStickyHeightVar());
 
 }
 // פונקציה חדשה: עדכון ה-UI על בסיס רשימת הקניות השמורה
