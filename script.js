@@ -18,6 +18,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+enableIndexedDbPersistence(db).catch((err) => {
+  // iOS/Safari במצב פרטי ועוד מקרים – נופלים לפה
+  console.warn('Firestore persistence disabled:', err.code || err);
+});
 
 // מניעת גלילה אנכית כאשר מתמקדים בסרגל
 const categoryFilterContainer = document.querySelector(".category-filter-container");
@@ -283,7 +287,11 @@ async function fetchAndRenderList() {
   }
 }
 window.addEventListener("resize", updateStickyHeightVar, { passive: true });
-
+// רענון שקט בעת חזרה לאונליין
+window.addEventListener('online', () => {
+  // תרענן את כותרות/קטגוריות מהשיטס ותעדכן UI
+  fetchAndRenderList();
+});
 // רינדור רשימת הקניות
 function renderList(categorizedItems) {
   container.innerHTML = "";
