@@ -486,3 +486,31 @@ body {
 .category-bubble .category-text{
   text-shadow: 0 1px 1px rgba(0,0,0,.15);
 }
+/* הגוף לא גולל; חוסמים overscroll chaining */
+html, body {
+  height: 100%;
+  overflow: hidden;                 /* ← חשוב */
+  overscroll-behavior-y: none;      /* כרום/אנדרואיד */
+}
+
+/* המעטפת בגובה מלא */
+#app-wrapper {
+  height: 100dvh;                   /* בטוח למקלדות/Notch */
+  overflow: hidden;
+  position: relative;
+}
+
+/* אזור גלילה יחיד לתוכן מתחת לסטיקי */
+#shopping-list-container {
+  height: calc(100dvh - var(--sticky-h, 140px)); /* יתעדכן מה-JS */
+  overflow-y: auto;                 /* ← רק פה גוללים */
+  -webkit-overflow-scrolling: touch;/* iOS גלילה חלקה */
+  overscroll-behavior: contain;     /* אין משיכת יתר מחוץ למכולה */
+}
+
+/* סרגל הקטגוריות נשאר אופקי בלבד, לא “גורר” את העמוד */
+.category-filter-container {
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: none;
+}
+
