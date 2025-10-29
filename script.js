@@ -2,11 +2,12 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
 import {
-  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   doc,
   setDoc,
-  getDoc,
-  enableIndexedDbPersistence
+  getDoc
 } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
 
@@ -24,11 +25,12 @@ const firebaseConfig = {
 // אתחול Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
-enableIndexedDbPersistence(db).catch((err) => {
-  // iOS/Safari במצב פרטי ועוד מקרים – נופלים לפה
-  console.warn('Firestore persistence disabled:', err.code || err);
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
 });
+
 
 // מניעת גלילה אנכית כאשר מתמקדים בסרגל
 const categoryFilterContainer = document.querySelector(".category-filter-container");
