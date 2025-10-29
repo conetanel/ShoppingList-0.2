@@ -39,6 +39,34 @@ const shareIcon = document.getElementById('share-icon');
 const categoryFilterWrapper = document.querySelector('.category-filter-wrapper');
 const headerContainer = document.getElementById('sticky-header-container');
 
+function lockRubberBand(el){
+  let startY = 0;
+  el.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches.length) startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  el.addEventListener('touchmove', (e) => {
+    const sc = el.scrollTop;
+    const atTop = sc <= 0;
+    const atBottom = Math.ceil(sc + el.clientHeight) >= el.scrollHeight;
+
+    const currY = e.touches[0].clientY;
+    const isPanningDown = currY > startY;
+    const isPanningUp   = currY < startY;
+
+    if ((atTop && isPanningDown) || (atBottom && isPanningUp)) {
+      e.preventDefault(); // מונע משיכת יתר של הדף עצמו
+    }
+  }, { passive: false });
+}
+
+// הפעלה:
+lockRubberBand(container);
+
+function updateStickyHeightVar(){
+  const h = headerContainer.offsetHeight; // גובה כל הסטיקי (כותרת+סרגל)
+  document.documentElement.style.setProperty('--sticky-h', `${h}px`);
+}
 const isMockMode = false;
 const SHEET_ID = '11OxjXpAo3vWnzJFG738M8FjelkK1vBM09dHzYf78Ubs';
 const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
@@ -284,6 +312,7 @@ async function fetchAndRenderList() {
         renderCategoryFilters(allCategorizedItems);
         renderList(allCategorizedItems);
         filterListByCategory('הכל');
+        updateStickyHeightVar();
         loadingSpinner.style.display = 'none';
         return;
     }
@@ -329,6 +358,7 @@ async function fetchAndRenderList() {
         console.error("שגיאה בטעינה מגיליון:", err);
     }
 }
+window.addEventListener('resize', updateStickyHeightVar, { passive: true });
 
 // רינדור רשימת הקניות
 function renderList(categorizedItems) {
