@@ -10,9 +10,9 @@ body {
 
 /* הגדרת גלילה על ה-body עצמו */
 html, body {
-    height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
+  height: 100%;
+  overflow: hidden;               /* ← הגוף לא גולל */
+  overscroll-behavior-y: none;    /* ← לא מושך את כל הדף למעלה/למטה */
 }
 
 /* New: Container for the sticky header and filter bar */
@@ -513,4 +513,23 @@ html, body {
   overscroll-behavior-x: contain;
   overscroll-behavior-y: none;
 }
+/* המעטפת בגובה מסך מלא וללא גלילה פנימית */
+#app-wrapper{
+  height: 100dvh;
+  overflow: hidden;
+  position: relative;
+}
 
+/* אזור הגלילה היחיד של התוכן (מתחת לסטיקי) */
+#shopping-list-container{
+  height: calc(100dvh - var(--sticky-h, 140px)); /* יתעדכן מה-JS */
+  overflow-y: auto;                 /* ← גוללים רק כאן */
+  -webkit-overflow-scrolling: touch;/* גלילה חלקה ב-iOS */
+  overscroll-behavior: contain;     /* אל תגרור את הדף החוצה */
+}
+
+/* סרגל הקטגוריות: גלילה אופקית בלבד, בלי chain */
+.category-filter-container{
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: none;
+}
