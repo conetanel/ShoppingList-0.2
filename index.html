@@ -21,7 +21,7 @@
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
     <!-- ✅ מניפסט PWA (אם עדיין אין, אגיד לך איך ליצור תוך 30 שניות) -->
-    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="manifest" href="./manifest.webmanifest">
 
     <title>רשימת קניות סופרמרקט</title>
     
@@ -58,7 +58,9 @@
 <!-- ✅ רישום Service Worker (כדי שהאפליקציה תהיה מותקנת באמת) -->
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(console.error);
+  navigator.serviceWorker.register('./sw.js', { scope: './' })
+    .then(reg => console.log('✅ Service Worker registered:', reg.scope))
+    .catch(err => console.error('❌ Service Worker registration failed:', err));
 }
 </script>
 
