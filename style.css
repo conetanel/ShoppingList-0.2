@@ -16,14 +16,13 @@ html, body {
 }
 
 /* New: Container for the sticky header and filter bar */
-#sticky-header-container {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background-color:var(--header-bg);
-    box-shadow: none; 
-    margin: 0;
-    padding: 0;
+#sticky-header-container{
+  position: relative;              /* לא sticky */
+  z-index: 100;
+  background: var(--header-bg);
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
 }
 
 /* Header and title styling */
@@ -517,28 +516,25 @@ html, body {
 }
 /* אזור גלילה יחיד לתוכן מתחת לסטיקי */
 /* ✅ הבלוק היחיד והסופי עבור #shopping-list-container */
-#shopping-list-container {
-    /* 1. סגנונות בסיס */
-    overflow-y: auto; 
-    -webkit-overflow-scrolling: touch; /* גלילה חלקה ב-iOS */
-    overscroll-behavior: contain;
-    box-sizing: border-box;
+#shopping-list-container{
+  min-height: 0;                   /* הקריטי ב-Grid/Flex כדי לא לחסום גלילה */
+  min-width: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 
-    /* 2. ריווח צדדי ועליון (כללי) */
-    padding: 15px 15px 0 15px; /* עליון: 15px, צדדים: 15px, תחתון: 0 */
+  padding: 15px 15px 12px;         /* החזרת ה-padding */
+  box-sizing: border-box;
 
-    /* 3. גובה: ברירת מחדל + פתרון Safe Area במקלדת (dvh) */
-    height: calc(100dvh - var(--sticky-h, 140px)); 
-
-    /* 4. התיקון הקריטי ל-iOS Home Bar: דוחף את סוף התוכן מעלה */
-    scroll-padding-bottom: calc(env(safe-area-inset-bottom) + var(--scroll-pad, 28px));
+  /* ריווח סיום מעל ה-Home Bar באייפון */
+  scroll-padding-bottom: calc(env(safe-area-inset-bottom) + 28px);
 }
 
 /* 5. כלל תמיכה בגובה: אם הדפדפן לא תומך ב-dvh, נשתמש ב-vh */
 @supports not (height: 100dvh) {
-  #shopping-list-container {
-    height: calc(100vh - var(--sticky-h, 140px));
-  }
+   #shopping-list-container {
+    height: calc(100vh - var(--sticky-h, 140px));
+   }
 }
 
 /* תמיכה אופטימלית ב-iOS */
@@ -547,17 +543,16 @@ html, body {
     height: calc(100dvb - var(--sticky-h, 140px));
   }
 }
+#shopping-list-container::after{
+  content:"";
+  display:block;
+  height: calc(env(safe-area-inset-bottom) + 24px);
+}
 
 /* סרגל הקטגוריות נשאר אופקי בלבד, לא “גורר” את העמוד */
 .category-filter-container {
   overscroll-behavior-x: contain;
   overscroll-behavior-y: none;
-}
-/* המעטפת בגובה מסך מלא וללא גלילה פנימית */
-#app-wrapper{
-  height: 100dvh;
-  overflow: hidden;
-  position: relative;
 }
 
 
