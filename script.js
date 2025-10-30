@@ -50,7 +50,16 @@ let currentUserId = null;
 
 // --- LOCAL CACHE FOR INSTANT START ---
 const CACHE_KEY = 'cachedCategorizedItemsV1';
+const SHOPPING_CACHE_KEY = 'cachedShoppingListV1';
 
+function saveShoppingCache(list){
+  try { localStorage.setItem(SHOPPING_CACHE_KEY, JSON.stringify(list)); } catch(_){}
+}
+
+function loadShoppingCache(){
+  try { return JSON.parse(localStorage.getItem(SHOPPING_CACHE_KEY) || '{}'); }
+  catch(_) { return {}; }
+}
 function saveCategoriesCache(data) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch(_){}
 }
@@ -71,7 +80,6 @@ function quickStartFromCache() {
   renderList(allCategorizedItems);
   filterListByCategory('הכל');
   updateStickyHeightVar();
-  loadingSpinner.style.display = 'none';
   return true;
 }
 
@@ -82,6 +90,24 @@ const loadingSpinner = document.getElementById("loading-spinner");
 const shareIcon = document.getElementById("share-icon");
 const categoryFilterWrapper = document.querySelector(".category-filter-wrapper");
 const headerContainer = document.getElementById("sticky-header-container");
+const overlay = document.getElementById('loading-overlay'); // מה-HTML של שלב 1
+const themeMeta = document.querySelector('meta[name="theme-color"]');
+
+// מציגים overlay כברירת מחדל עד שהתוכן מוכן
+if (overlay) document.body.classList.add('is-loading');
+
+function setThemeColor(color){
+  try { themeMeta && themeMeta.setAttribute('content', color); } catch(_){}
+}
+
+function fadeOutOverlay(){
+  if(!overlay) return;
+  overlay.classList.add('fade-out');
+  overlay.addEventListener('transitionend', () => {
+    overlay.remove();
+  }, { once: true });
+  document.body.classList.remove('is-loading');
+}
 
 function updateStickyHeightVar() {
   const h = headerContainer.offsetHeight; // גובה כל הסטיקי (כותרת+סרגל)
@@ -124,6 +150,65 @@ const CATEGORY_ICONS = {
   "חד פעמי ותבניות": "restaurant-outline",
   אחר: "pricetag-outline",
 };
+
+
+// ===== BEGIN: WARM START + 2s OVERLAY TIMER =====
+
+// מרנדר מיד מהקאש: קטגוריות + רשימת משתמש (shoppingList)
+function warmStartFromCaches() {
+  const cachedCats = loadCategoriesCache();
+  const cachedList = loadShoppingCache();
+
+  if (!cachedCats) return false;
+
+  allCategorizedItems = cachedCats;
+  shoppingList = cachedList || {};
+
+  // צבע נעים ל-theme-color בזמן מסך טעינה
+  const lightened = lightenColor('#F2F4F7', 0.5);
+  setThemeColor(lightened);
+
+  // הידרציה בלי אנימציות כדי למנוע הבהובים
+  container.classList.add('hydrating');
+  try {
+    renderCategoryFilters(allCategorizedItems);
+    renderList(allCategorizedItems);      // createItemElement חייב לכבד shoppingList בזמן יצירה
+    filterListByCategory('הכל');
+    updateStickyHeightVar();
+  } finally {
+    requestAnimationFrame(() => container.classList.remove('hydrating'));
+  }
+
+  return true;
+}
+
+// הפעלה מיידית — אם יש קאש, נקבל תצוגה מלאה תוך מילישניות
+const hadWarmStart = warmStartFromCaches();
+
+// overlay לא ייסגר לפני שחלפו 2 שניות
+let minTimerDone = false;
+setTimeout(() => {
+  minTimerDone = true;
+  maybeHideOverlay();
+}, 2000);
+
+// כשיש תוכן על המסך (מקאש או מרענון טרי)
+let contentReady = !!hadWarmStart;
+
+function maybeHideOverlay() {
+  if (minTimerDone && contentReady) fadeOutOverlay();
+}
+
+// חגורת בטיחות: כשעמוד 'loaded' — אשר שהתוכן מוכן וסגור אם אפשר
+window.addEventListener('load', () => {
+  // אם אין קאש/רשת – עדיין נסגור אחרי 2 שניות ונראה את ה־UI (גם אם הרשימה ריקה)
+  contentReady = true;
+  maybeHideOverlay();
+});
+
+// ===== END: WARM START + 2s OVERLAY TIMER =====
+
+
 
 // פונקציית עזר: מבהירה צבע ע"י הגברת ערכי RGB
 function lightenColor(color, percent) {
@@ -279,6 +364,7 @@ function updateUIFromShoppingList() {
 }
 
 // טעינת הנתונים מ-Google Sheets או Mock
+//  fetchAndRenderList minimal UI side effects =====
 async function fetchAndRenderList() {
   if (isMockMode) {
     const mockData = {
@@ -286,11 +372,16 @@ async function fetchAndRenderList() {
       פירות: [{ item: "תפוח", type: "גודל" }],
     };
     allCategorizedItems = mockData;
-    renderCategoryFilters(allCategorizedItems);
-    renderList(allCategorizedItems);
-    filterListByCategory("הכל");
-    updateStickyHeightVar();
-    loadingSpinner.style.display = "none";
+    saveCategoriesCache(allCategorizedItems);
+    container.classList.add('hydrating');
+    try {
+      renderCategoryFilters(allCategorizedItems);
+      renderList(allCategorizedItems);
+      filterListByCategory("הכל");
+      updateStickyHeightVar();
+    } finally {
+      requestAnimationFrame(() => container.classList.remove('hydrating'));
+    }
     return;
   }
 
@@ -302,31 +393,44 @@ async function fetchAndRenderList() {
 
     const categorizedItems = {};
     rows.forEach((row) => {
-      const cells = row.c;
+      const cells = row.c || [];
       if (cells.length < 3) return;
       const category = cells[0]?.v;
       const item = cells[1]?.v;
       const type = cells[2]?.v;
       if (category && item) {
-        if (!categorizedItems[category]) categorizedItems[category] = [];
-        categorizedItems[category].push({ item, type });
+        (categorizedItems[category] ||= []).push({ item, type });
       }
     });
 
     allCategorizedItems = categorizedItems;
-    saveCategoriesCache(allCategorizedItems); // ✅ שומר לשימוש בהפעלה הבאה
-    renderCategoryFilters(allCategorizedItems);
-    renderList(allCategorizedItems);
+    saveCategoriesCache(allCategorizedItems);
 
-    filterListByCategory("הכל");
-    loadingSpinner.style.display = "none";
+    container.classList.add('hydrating');
+    try {
+      renderCategoryFilters(allCategorizedItems);
+      renderList(allCategorizedItems);
+      filterListByCategory("הכל");
+      updateStickyHeightVar();
+    } finally {
+      requestAnimationFrame(() => container.classList.remove('hydrating'));
+    }
+  
+    
+    // בסוף רינדור: סמן שהתוכן מוכן (יוריד overlay אם עברו 2 שניות)
+    contentReady = true;
+    maybeHideOverlay();
+
   } catch (err) {
-    loadingSpinner.textContent = "❌ שגיאה בטעינת הנתונים. ודא שהקישור לגיליון תקין.";
     console.error("שגיאה בטעינה מגיליון:", err);
+    // ודא שלא נתקעים במסך טעינה
+  contentReady = true;
+  maybeHideOverlay();
   }
 }
-window.addEventListener("resize", updateStickyHeightVar, { passive: true });
-// רענון שקט בעת חזרה לאונליין
+
+// ===== END PATCH F =====
+
 window.addEventListener('online', async () => {
   await fetchAndRenderList();
   if (currentUserId) await loadUserShoppingList(currentUserId);
@@ -407,8 +511,12 @@ function createItemElement(itemObj, category) {
   const itemControlsDiv = document.createElement("div");
   itemControlsDiv.className = "item-controls locked";
 
-  // כפתור האייקון החדש
-  const iconToggle = createIconToggle(false, (isActive) => {
+  // ✅ מצב התחלתי מתוך shoppingList (אם קיים)
+  const saved = shoppingList[itemObj.item];
+  const initiallyActive = !!saved;
+
+  // כפתור האייקון
+  const iconToggle = createIconToggle(initiallyActive, (isActive) => {
     if (isActive) {
       itemControlsDiv.classList.remove("locked");
       itemControlsDiv.classList.add("show-controls");
@@ -432,69 +540,82 @@ function createItemElement(itemObj, category) {
       if (currentUserId) saveShoppingList(currentUserId, shoppingList);
     }
   });
-
   itemControlsDiv.appendChild(iconToggle);
 
+  // יצירת בקרי כמות/מידה
   if (itemObj.type === "כמות") {
     const stepperContainer = document.createElement("div");
     stepperContainer.className = "quantity-stepper-container control";
-    const minusButton = document.createElement("button");
-    minusButton.textContent = "–";
-    const valueSpan = document.createElement("span");
-    valueSpan.className = "stepper-value";
-    valueSpan.textContent = "1";
-    const plusButton = document.createElement("button");
-    plusButton.textContent = "+";
-
-    stepperContainer.appendChild(minusButton);
-    stepperContainer.appendChild(valueSpan);
-    stepperContainer.appendChild(plusButton);
+    const minusButton = document.createElement("button"); minusButton.textContent = "–";
+    const valueSpan = document.createElement("span"); valueSpan.className = "stepper-value"; valueSpan.textContent = "1";
+    const plusButton = document.createElement("button"); plusButton.textContent = "+";
+    stepperContainer.append(minusButton, valueSpan, plusButton);
     itemControlsDiv.appendChild(stepperContainer);
+
+    // ✅ אם נשמרה כמות – להציג אותה כבר ביצירה
+    if (saved?.quantity) {
+      const m = saved.quantity.match(/\d+/);
+      if (m) valueSpan.textContent = m[0];
+    }
 
     plusButton.addEventListener("click", () => {
       let currentValue = parseInt(valueSpan.textContent);
       if (currentValue < 10) {
-        currentValue++;
-        valueSpan.textContent = currentValue;
-        if (itemControlsDiv.querySelector(".icon-toggle")?.classList.contains("active")) {
+        valueSpan.textContent = ++currentValue;
+        if (iconToggle.classList.contains("active")) {
           shoppingList[itemObj.item] = { category, quantity: `${currentValue} יחידות` };
           if (currentUserId) saveShoppingList(currentUserId, shoppingList);
         }
       }
     });
+
     minusButton.addEventListener("click", () => {
       let currentValue = parseInt(valueSpan.textContent);
       if (currentValue > 1) {
-        currentValue--;
-        valueSpan.textContent = currentValue;
-        if (itemControlsDiv.querySelector(".icon-toggle")?.classList.contains("active")) {
+        valueSpan.textContent = --currentValue;
+        if (iconToggle.classList.contains("active")) {
           shoppingList[itemObj.item] = { category, quantity: `${currentValue} יחידות` };
           if (currentUserId) saveShoppingList(currentUserId, shoppingList);
         }
       }
     });
+
   } else if (itemObj.type === "גודל") {
     const sizeOptions = ["S", "M", "L"];
     const sizeButtonsContainer = document.createElement("div");
     sizeButtonsContainer.className = "size-buttons-container control";
-    sizeOptions.forEach((size, index) => {
+    sizeOptions.forEach((size) => {
       const button = document.createElement("button");
       button.className = "size-button";
       button.textContent = size;
-
-      if (index === 0) button.classList.add("active");
+      sizeButtonsContainer.appendChild(button);
 
       button.addEventListener("click", () => {
         sizeButtonsContainer.querySelectorAll(".size-button").forEach((btn) => btn.classList.remove("active"));
         button.classList.add("active");
-        if (itemControlsDiv.querySelector(".icon-toggle")?.classList.contains("active")) {
+        if (iconToggle.classList.contains("active")) {
           shoppingList[itemObj.item] = { category, size: button.textContent };
           if (currentUserId) saveShoppingList(currentUserId, shoppingList);
         }
       });
-      sizeButtonsContainer.appendChild(button);
     });
     itemControlsDiv.appendChild(sizeButtonsContainer);
+
+    // ✅ אם נשמרה מידה – להפעיל אותה כבר עכשיו
+    if (saved?.size) {
+      sizeButtonsContainer.querySelectorAll(".size-button").forEach((btn) => {
+        if (btn.textContent === saved.size) btn.classList.add("active");
+      });
+    } else {
+      // ברירת מחדל: S
+      sizeButtonsContainer.querySelector(".size-button")?.classList.add("active");
+    }
+  }
+
+  // ✅ אם נשמר – לחשוף בקרות כבר מההתחלה
+  if (initiallyActive) {
+    itemControlsDiv.classList.remove("locked");
+    itemControlsDiv.classList.add("show-controls");
   }
 
   itemDiv.appendChild(itemControlsDiv);
@@ -633,8 +754,9 @@ function updateUIWithSavedList(savedList) {
 
 // שמירת רשימת הקניות ב-Firebase
 function saveShoppingList(userId, list) {
+  saveShoppingCache(list); // ✅ נשמר מקומית מייד
   const userDocRef = doc(db, "users", userId);
-  setDoc(userDocRef, { shoppingList: list })
+  setDoc(userDocRef, { shoppingList: list }, { merge: true })
     .then(() => console.log("רשימת קניות נשמרה בהצלחה!"))
     .catch((error) => console.error("שגיאה בשמירת רשימת הקניות:", error));
 }
@@ -648,8 +770,14 @@ async function loadUserShoppingList(userId) {
       const data = docSnap.data();
       if (data.shoppingList) {
         shoppingList = data.shoppingList;
+
+        // נשמור לקאש המקומי לטובת פתיחה מהירה הבאה
+        saveShoppingCache(shoppingList);
+
         updateUIWithSavedList(shoppingList);
         console.log("רשימת קניות נטענה:", shoppingList);
+
+        // הבטחת יישום מצב גם אם רינדור היה אחרי
         updateUIFromShoppingList();
       }
     } else {
@@ -662,28 +790,48 @@ async function loadUserShoppingList(userId) {
 
 
 
+
+
+
+
+// אם היה קאש — יכול להיות שהתוכן כבר מוכן; נשאיר את הסגירה לטיימר
+if (hadWarmStart) maybeHideOverlay();
+
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUserId = user.uid;
     console.log("משתמש מחובר עם מזהה:", currentUserId);
 
-    // 1) אם יש קאש מקומי של קטגוריות – בנה UI מייד
-    const hadCache = quickStartFromCache();
-
-    // 2) אם כבר יש UI מהקאש – משוך את הרשימה השמורה והדבק אותה עליו
+    // 1) מצב משתמש (Firestore ינצל persistence מקומי)
     await loadUserShoppingList(currentUserId);
 
-    // 3) תמיד מרעננים את הקטלוג מהשיטס (רינדור חדש)
+    // 2) אם לא היה Warm Start אבל כבר יש קטגוריות בזיכרון — אפשר לרנדר
+    if (!hadWarmStart && allCategorizedItems && Object.keys(allCategorizedItems).length > 0) {
+      renderCategoryFilters(allCategorizedItems);
+      renderList(allCategorizedItems);
+      filterListByCategory('הכל');
+      updateStickyHeightVar();
+      contentReady = true;
+      maybeHideOverlay();
+    }
+
+    // 3) רענון שקט מה-Sheets (כולל שמירת קאש בפנים)
     await fetchAndRenderList();
 
-    // 4) שוב מדביקים את הרשימה על הרינדור הטרי (מונע מצב מרוץ)
+    // 4) שוב מדביקים מצב משתמש (לכסות מרוץ)
     await loadUserShoppingList(currentUserId);
 
-    loadingSpinner.style.display = 'none';
+    // 5) עכשיו יש תוכן ודאי — סגור overlay אם עברו 2 שניות
+    contentReady = true;
+    maybeHideOverlay();
+
   } else {
-    signInAnonymously(auth).catch(error => {
-      console.error("שגיאה בהתחברות אנונימית:", error);
-    });
+    signInAnonymously(auth).catch(console.error);
   }
+});
+window.addEventListener('unhandledrejection', () => {
+  contentReady = true;
+  try { maybeHideOverlay(); } catch(_) {}
+  setTimeout(() => { try { fadeOutOverlay(); } catch(_) {} }, 6000);
 });
 
