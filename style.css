@@ -570,3 +570,84 @@ html {
 
 /* שמור על ה-padding הקיים ל-safe area אצלך בהאדר */
 .header { padding-top: calc(20px + env(safe-area-inset-top)); }
+
+/* ====== OVERLAY (מאוחד, עם רקע ותמונת לוגו) ====== */
+:root{
+  --overlay-brand: #0b597d; /* לשימוש עתידי אם תרצה */
+}
+
+/* מצב "טעינה" חוסם גלילה */
+body.is-loading { overflow: hidden; }
+
+/* שכבת הפתיחה – גרדיאנט + התמונה שלך */
+#loading-overlay{
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: max(20px, env(safe-area-inset-top)) 24px max(20px, env(safe-area-inset-bottom));
+  opacity: 1;
+  transition: opacity .35s ease;
+
+  /* קודם התמונה (שכבה עליונה), ואז גרדיאנט עדין מתחתיה */
+  background:
+    url('icons/Background.svg') center/cover no-repeat,
+    linear-gradient(180deg, rgba(255,255,255,.12), rgba(247,248,250,.18));
+}
+
+
+#loading-overlay.fade-out { opacity: 0; pointer-events: none; }
+
+#loading-overlay .overlay-content{
+  display: grid;
+  place-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+/* לוגו במקום ספינר */
+.overlay-logo{
+  width: clamp(120px, 28vw, 220px);
+  height: auto;
+  animation: logo-pulse 1.4s ease-in-out infinite;
+}
+@keyframes logo-pulse{
+  0%   { transform: scale(1);    opacity: 1; }
+  50%  { transform: scale(1.03); opacity: .85; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+/* טקסט נגישות נסתר */
+.sr-only{
+  position: absolute !important;
+  width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0,0,0,0);overflow:hidden;white-space:nowrap;
+}
+
+/* נגישות: להפחית אנימציות */
+@media (prefers-reduced-motion: reduce){
+  #loading-overlay{ transition: none; }
+  .overlay-logo{ animation: none; }
+}
+/* ====== סוף overlay המאוחד ====== */
+
+/* חיזוק האנימציה ללוגו – לשים בסוף הקובץ */
+#loading-overlay .overlay-logo{
+  display: block;
+  width: clamp(120px, 28vw, 220px);
+  height: auto;
+  animation: logo-pulse 1.4s ease-in-out infinite !important;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+@keyframes logo-pulse{
+  0%   { transform: scale(1);    opacity: 1; }
+  50%  { transform: scale(1.03); opacity: .85; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+/* במקרה שיש לך כלל שמבטל אנימציות בזמן הידרציה — ננעל את זה */
+.hydrating #loading-overlay .overlay-logo{
+  animation: logo-pulse 1.4s ease-in-out infinite !important;
+}
