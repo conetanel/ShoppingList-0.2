@@ -1,75 +1,89 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="רשימת קניות">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#F2F4F7">
 
-    <!-- ✅ תוקן: היה חסר רווח → גרם לכל המטא־טאגים להיכשל באייפון -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="preload" as="image" href="icons/Background.svg">
+  <link rel="preload" as="image" href="icons/logo.svg">
 
-    <!-- ✅ הפעלה כאפליקציה באייפון -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="רשימת קניות">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- ✅ Critical CSS: קודם, כדי למנוע הבזק לבן -->
+  <style>
+    html,body{background:#F2F4F7;margin:0}
+    #loading-overlay{
+      position:fixed;inset:0;z-index:9999;display:block;
+      background:
+        url('icons/Background.svg') center/cover no-repeat,
+        linear-gradient(180deg, rgba(255,255,255,.12), rgba(247,248,250,.18));
+    }
+    #loading-overlay .overlay-content{
+      position:absolute;top:50%;left:50%;
+      transform:translate(-50%,-50%);
+      display:flex;flex-direction:column;align-items:center;gap:16px;
+    }
+    #loading-overlay .overlay-logo{
+      width:180px;max-width:220px;height:auto;
+      animation:logoPulse 1.4s ease-in-out infinite;
+      will-change:transform,opacity;
+    }
+    @keyframes logoPulse{
+      0%{transform:scale(1);opacity:1}
+      50%{transform:scale(1.03);opacity:.85}
+      100%{transform:scale(1);opacity:1}
+    }
+  </style>
 
-    <!-- ✅ הפעלה כאפליקציה באנדרואיד -->
-    <meta name="mobile-web-app-capable" content="yes">
-
-    <!-- ✅ צבע הסטטוס בר → יתעדכן אחר כך ע"י ה-JS -->
-    <meta name="theme-color" content="#F2F4F7">
-
-    <!-- ✅ אייקון למסך הבית (תשאיר את הנתיב, רק תחליף לקובץ שלך) -->
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-
-    <!-- ✅ מניפסט PWA (אם עדיין אין, אגיד לך איך ליצור תוך 30 שניות) -->
-    <link rel="manifest" href="./manifest.webmanifest">
-
-    <title>רשימת קניות סופרמרקט</title>
-    
-    <link rel="stylesheet" href="style.css">
+  <!-- שאר ה-CSS שלך -->
+  <link rel="stylesheet" href="style.css">
+  <title>רשימת קניות סופרמרקט</title>
 </head>
 
-<body>
+<!-- ❗ רק BODY אחד, עם המחלקה is-loading -->
+<body class="is-loading">
 
-<div id="app-wrapper">
-
-    <div id="sticky-header-container">
-        <header class="header">
-            <h1>רשימת קניות</h1>
-            <ion-icon name="share-outline" id="share-icon"></ion-icon>
-        </header>
-
-        <div class="category-filter-container">
-            <div class="category-filter-wrapper"></div>
-        </div>
+  <!-- ❗ Overlay אחד בלבד -->
+  <div id="loading-overlay" role="status" aria-live="polite" aria-label="טוען">
+    <div class="overlay-content">
+      <img class="overlay-logo" src="./icons/logo.svg" alt="" aria-hidden="true">
+      <span class="sr-only">טוען…</span>
     </div>
-    
-            <!-- Overlay טעינה מסך מלא -->
-   <div id="loading-overlay" role="status" aria-live="polite" aria-label="טוען">
-  <div class="overlay-content">
-    <img class="overlay-logo" src="./icons/logo.svg" alt="" aria-hidden="true">
-    <span class="sr-only">טוען…</span>
   </div>
-</div>
+
+  <div id="app-wrapper">
+    <div id="sticky-header-container">
+      <header class="header">
+        <h1>רשימת קניות</h1>
+        <ion-icon name="share-outline" id="share-icon"></ion-icon>
+      </header>
+      <div class="category-filter-container">
+        <div class="category-filter-wrapper"></div>
+      </div>
+    </div>
 
     <div id="shopping-list-container"></div>
+  </div>
 
-</div>
+  <!-- Ionicons -->
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 
-<!-- Ionicons -->
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+  <!-- האפליקציה שלך -->
+  <script type="module" src="script.js"></script>
 
-<!-- האפליקציה שלך -->
-<script type="module" src="script.js"></script>
-
-<!-- ✅ רישום Service Worker (כדי שהאפליקציה תהיה מותקנת באמת) -->
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js', { scope: './' })
-    .then(reg => console.log('✅ Service Worker registered:', reg.scope))
-    .catch(err => console.error('❌ Service Worker registration failed:', err));
-}
-</script>
-
+  <!-- Service Worker -->
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(reg => console.log('✅ Service Worker registered:', reg.scope))
+      .catch(err => console.error('❌ Service Worker registration failed:', err));
+  }
+  </script>
 </body>
 </html>
