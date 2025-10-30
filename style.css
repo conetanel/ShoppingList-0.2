@@ -681,3 +681,39 @@ body.is-loading { overflow: hidden; }
 .hydrating #loading-overlay .overlay-logo{
   animation: logo-pulse 1.4s ease-in-out infinite !important;
 }
+/* גובה נכון לכל הדפדפנים */
+#app-wrapper{
+  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  position: relative;
+}
+@supports (height: 100dvb){
+  #app-wrapper{ min-height: 100dvb; height: 100dvb; }
+}
+
+/* אזור הגלילה – מוסיפים מרווח תחתון אמיתי ל-safe area */
+#shopping-list-container{
+  height: calc(100dvh - var(--sticky-h, 140px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+
+  /* זה עושה את כל ההבדל ב-iPhone */
+  padding: 0 15px calc(env(safe-area-inset-bottom) + 16px);
+}
+@supports (height: 100dvb){
+  #shopping-list-container{
+    height: calc(100dvb - var(--sticky-h, 140px));
+  }
+}
+
+/* ספייסר בטיחותי בסוף הרשימה (שיהיה עוד קצת מרווח נעים) */
+#shopping-list-container::after{
+  content: "";
+  display: block;
+  height: calc(env(safe-area-inset-bottom) + 12px);
+}
+
+/* ודא שאין ::after מבוטל/מוחלף בהמשך הקובץ */
