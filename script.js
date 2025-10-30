@@ -52,6 +52,26 @@ let currentUserId = null;
 const CACHE_KEY = 'cachedCategorizedItemsV1';
 const SHOPPING_CACHE_KEY = 'cachedShoppingListV1';
 
+function setStickyHeight() {
+  const el = document.getElementById('sticky-header-container');
+  if (!el) return;
+  const h = el.offsetHeight;
+  document.documentElement.style.setProperty('--sticky-h', h + 'px');
+}
+
+// מדידה בתחילת טעינה, אחרי טעינת תמונות, ובכל שינוי גודל / שינוי תוכן
+window.addEventListener('DOMContentLoaded', setStickyHeight);
+window.addEventListener('load', setStickyHeight);
+window.addEventListener('resize', setStickyHeight);
+
+// יתפוס שינויי גובה דינמיים (כותרת משתנה, פילטרים וכו')
+const sticky = document.getElementById('sticky-header-container');
+if (sticky && 'ResizeObserver' in window) {
+  const ro = new ResizeObserver(setStickyHeight);
+  ro.observe(sticky);
+}
+
+
 function saveShoppingCache(list){
   try { localStorage.setItem(SHOPPING_CACHE_KEY, JSON.stringify(list)); } catch(_){}
 }
