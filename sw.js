@@ -1,5 +1,5 @@
 /* sw.js - Offline-first PWA with smart caching + background refresh */
-const SW_VERSION = 'v1.0.15
+const SW_VERSION = 'v1.0.16
 ';
 const APP_SHELL = 'app-shell-' + SW_VERSION;
 const RUNTIME = 'runtime-' + SW_VERSION;
