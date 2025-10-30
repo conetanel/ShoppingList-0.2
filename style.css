@@ -261,6 +261,11 @@ html, body {
     background: var(--bottom-gradient, linear-gradient(to bottom, #F2F4F7, transparent)); /* גרידיאנט תחתון דיפולטי */
     transform: translateY(100%); /* מזיז את הגרידיאנט מתחת לסרגל */
 }
+#shopping-list-container::after{
+  content: "";
+  display: block;
+  height: calc(env(safe-area-inset-bottom) + 32px); /* ספייסר אמיתי + safe-area */
+}
 
 .category-filter-container::-webkit-scrollbar {
     display: none; /* הסתרת סרגל גלילה ב-Chrome/Safari */
