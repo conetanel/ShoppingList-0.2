@@ -568,24 +568,21 @@ html, body {
 }
 /* מיכל הגלילה: מרווח תחתון קבוע + התאמה ל-safe area */
 #shopping-list-container{
+  /* הגובה נשאר כמו שהיה לך */
   height: calc(100dvh - var(--sticky-h, 140px));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-
-  /* אם יש לך כבר padding – תשאיר; העיקר שיהיה bottom קטן */
-  padding: 0 15px 12px;
   box-sizing: border-box;
 
-  /* כשמגיעים לסוף – להשאיר ריווח מתחת לפריט האחרון */
-  scroll-padding-bottom: var(--scroll-pad, 28px);
+  /* זה הקטע החשוב: ריווח תחתון אמיתי כולל ה-home indicator */
+  padding: 0 15px calc(env(safe-area-inset-bottom) + var(--scroll-pad, 28px));
 }
 
 /* ספייסר אמיתי בתחתית המכולה (גם ל-iOS עם notch) */
 #shopping-list-container::after{
   content: none;
-  //display: block;//
-  //height: calc(env(safe-area-inset-bottom) + var(--scroll-pad, 28px));//
+  
 }
 
 /* ליתר ביטחון: ודא שהכרטיס האחרון לא “נדבק” לשפה */
