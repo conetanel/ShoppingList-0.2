@@ -22,19 +22,29 @@ html, body {
     z-index: 100;
     background-color:var(--header-bg);
     box-shadow: none; 
+    margin: 0;
+    padding: 0;
 }
 
 /* Header and title styling */
 .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    direction: rtl;
-    padding: 20px;
-    background-color:var(--header-bg);
-    box-shadow: none; 
-}
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  direction: rtl;
+  background-color: var(--header-bg);
+  box-shadow: none;
 
+  /* מרווחי ברירת מחדל לכל המכשירים */
+  padding: 20px;
+  padding-top: 20px;  /* ישתדרג ב-iOS בהמשך */
+}
+/* רק אם הדפדפן תומך ב-safe-area (iOS) נחבר את הנוץ' */
+@supports (padding: env(safe-area-inset-top)) {
+  .header {
+    padding-top: calc(20px + env(safe-area-inset-top));
+  }
+}
 .header h1 {
     font-size: 1.5rem;
     font-weight: 600;
@@ -334,12 +344,7 @@ html, body {
 .header { padding-top: calc(20px + env(safe-area-inset-top)); }
 body { background-color: #f2f2f7; }
 
-body {
-    padding-top: constant(safe-area-inset-top);
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: constant(safe-area-inset-bottom);
-    padding-bottom: env(safe-area-inset-bottom);
-}
+
 /* כפתור אייקון במקום הטוגל */
 .item-controls .icon-toggle {
     position: relative;
