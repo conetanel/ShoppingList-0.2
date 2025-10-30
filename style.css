@@ -500,18 +500,46 @@ html, body {
 
 /* המעטפת בגובה מלא */
 #app-wrapper {
+  min-height: 100vh;
   height: 100dvh;                   /* בטוח למקלדות/Notch */
   overflow: hidden;
   position: relative;
 }
-
+/* אם הדפדפן תומך ב-viewport הדינמי – עדיף */
+@supports (height: 100dvh) {
+  #app-wrapper {
+    min-height: 100dvh;
+    height: 100dvh;
+  }
+}
+/* תמיכה מעולה גם ב-iOS חדשים */
+@supports (height: 100dvb) {
+  #app-wrapper {
+    min-height: 100dvb;
+    height: 100dvb;
+  }
+}
 /* אזור גלילה יחיד לתוכן מתחת לסטיקי */
 #shopping-list-container {
   height: calc(100dvh - var(--sticky-h, 140px)); /* יתעדכן מה-JS */
   overflow-y: auto;                 /* ← רק פה גוללים */
   -webkit-overflow-scrolling: touch;/* iOS גלילה חלקה */
   overscroll-behavior: contain;     /* אין משיכת יתר מחוץ למכולה */
+   box-sizing: border-box;
+   padding: 0 15px calc(env(safe-area-inset-bottom) + var(--scroll-pad, 28px));
 }
+
+/* לשפר בדפדפנים תומכי dvh/dvb */
+@supports (height: 100dvh) {
+  #shopping-list-container{
+    height: calc(100dvh - var(--sticky-h, 140px));
+  }
+}
+@supports (height: 100dvb) {
+  #shopping-list-container{
+    height: calc(100dvb - var(--sticky-h, 140px));
+  }
+
 
 /* סרגל הקטגוריות נשאר אופקי בלבד, לא “גורר” את העמוד */
 .category-filter-container {
@@ -555,9 +583,9 @@ html, body {
 
 /* ספייסר אמיתי בתחתית המכולה (גם ל-iOS עם notch) */
 #shopping-list-container::after{
-  content: "";
-  display: block;
-  height: calc(env(safe-area-inset-bottom) + var(--scroll-pad, 28px));
+  content: none;
+  //display: block;//
+  //height: calc(env(safe-area-inset-bottom) + var(--scroll-pad, 28px));//
 }
 
 /* ליתר ביטחון: ודא שהכרטיס האחרון לא “נדבק” לשפה */
