@@ -27,6 +27,7 @@
     
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
 <div id="app-wrapper">
@@ -42,7 +43,13 @@
         </div>
     </div>
     
-    <div id="loading-spinner">טוען רשימת מוצרים...</div>
+            <!-- Overlay טעינה מסך מלא -->
+   <div id="loading-overlay" role="status" aria-live="polite" aria-label="טוען">
+  <div class="overlay-content">
+    <img class="overlay-logo" src="./icons/logo.svg" alt="" aria-hidden="true">
+    <span class="sr-only">טוען…</span>
+  </div>
+</div>
 
     <div id="shopping-list-container"></div>
 
