@@ -72,10 +72,6 @@ html, body {
     font-size: 1.1rem;
 }
 
-#shopping-list-container {
-    padding: 0 15px;
-    padding-top: 15px;
-}
 
 /* Category wrapper: נשאר רק כמאגר ומזהה קטגוריה */
 .category-wrapper {
@@ -520,26 +516,37 @@ html, body {
   }
 }
 /* אזור גלילה יחיד לתוכן מתחת לסטיקי */
+/* ✅ הבלוק היחיד והסופי עבור #shopping-list-container */
 #shopping-list-container {
-  height: calc(100dvh - var(--sticky-h, 140px)); /* יתעדכן מה-JS */
-  overflow-y: auto;                 /* ← רק פה גוללים */
-  -webkit-overflow-scrolling: touch;/* iOS גלילה חלקה */
-  overscroll-behavior: contain;     /* אין משיכת יתר מחוץ למכולה */
-   box-sizing: border-box;
-   scroll-padding-bottom: calc(env(safe-area-inset-bottom) + var(--scroll-pad, 28px));
+    /* 1. סגנונות בסיס */
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch; /* גלילה חלקה ב-iOS */
+    overscroll-behavior: contain;
+    box-sizing: border-box;
+
+    /* 2. ריווח צדדי ועליון (כללי) */
+    padding: 15px 15px 0 15px; /* עליון: 15px, צדדים: 15px, תחתון: 0 */
+
+    /* 3. גובה: ברירת מחדל + פתרון Safe Area במקלדת (dvh) */
+    height: calc(100dvh - var(--sticky-h, 140px)); 
+
+    /* 4. התיקון הקריטי ל-iOS Home Bar: דוחף את סוף התוכן מעלה */
+    scroll-padding-bottom: calc(env(safe-area-inset-bottom) + var(--scroll-pad, 28px));
 }
 
-/* לשפר בדפדפנים תומכי dvh/dvb */
-@supports (height: 100dvh) {
-  #shopping-list-container{
-    height: calc(100dvh - var(--sticky-h, 140px));
-  }
+/* 5. כלל תמיכה בגובה: אם הדפדפן לא תומך ב-dvh, נשתמש ב-vh */
+@supports not (height: 100dvh) {
+  #shopping-list-container {
+    height: calc(100vh - var(--sticky-h, 140px));
+  }
 }
+
+/* תמיכה אופטימלית ב-iOS */
 @supports (height: 100dvb) {
-  #shopping-list-container{
+  #shopping-list-container {
     height: calc(100dvb - var(--sticky-h, 140px));
   }
-
+}
 
 /* סרגל הקטגוריות נשאר אופקי בלבד, לא “גורר” את העמוד */
 .category-filter-container {
@@ -553,37 +560,14 @@ html, body {
   position: relative;
 }
 
-/* אזור הגלילה היחיד של התוכן (מתחת לסטיקי) */
-#shopping-list-container{
-  height: calc(100dvh - var(--sticky-h, 140px)); /* יתעדכן מה-JS */
-  overflow-y: auto;                 /* ← גוללים רק כאן */
-  -webkit-overflow-scrolling: touch;/* גלילה חלקה ב-iOS */
-  overscroll-behavior: contain;     /* אל תגרור את הדף החוצה */
-}
+
 
 /* סרגל הקטגוריות: גלילה אופקית בלבד, בלי chain */
 .category-filter-container{
   overscroll-behavior-x: contain;
   overscroll-behavior-y: none;
 }
-/* מיכל הגלילה: מרווח תחתון קבוע + התאמה ל-safe area */
-#shopping-list-container{
-  /* הגובה נשאר כמו שהיה לך */
-  height: calc(100dvh - var(--sticky-h, 140px));
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  box-sizing: border-box;
 
-  /* זה הקטע החשוב: ריווח תחתון אמיתי כולל ה-home indicator */
-  padding: 0 15px calc(env(safe-area-inset-bottom) + var(--scroll-pad, 28px));
-}
-
-/* ספייסר אמיתי בתחתית המכולה (גם ל-iOS עם notch) */
-#shopping-list-container::after{
-  content: none;
-  
-}
 
 /* ליתר ביטחון: ודא שהכרטיס האחרון לא “נדבק” לשפה */
 .category-wrapper:last-of-type .item-card{
@@ -698,32 +682,8 @@ body.is-loading { overflow: hidden; }
   }
 }
 
-/* -------- אזור הגלילה -------- */
-#shopping-list-container {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  box-sizing: border-box;
 
-  /* הגובה מחושב תמיד דינמית */
-  height: calc(100dvh - var(--sticky-h, 140px));
-}
 
-/* תמיכה אופטימלית ב-iOS */
-@supports (height: 100dvb) {
-  #shopping-list-container {
-    height: calc(100dvb - var(--sticky-h, 140px));
-  }
-}
 
-/* -------- רווח תחתון אמיתי (SAFE AREA + שוליים לתוכן) -------- */
-#shopping-list-container {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
-}
 
-/* "ריפוד אחרון" — מבטיח שגם הפריט האחרון לא נדבק לשוליים */
-#shopping-list-container::after {
-  content: "";
-  display: block;
-  height: calc(env(safe-area-inset-bottom) + 16px);
-}
+
