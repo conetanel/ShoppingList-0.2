@@ -526,7 +526,7 @@ html, body {
   -webkit-overflow-scrolling: touch;/* iOS גלילה חלקה */
   overscroll-behavior: contain;     /* אין משיכת יתר מחוץ למכולה */
    box-sizing: border-box;
-   padding: 0 15px calc(env(safe-area-inset-bottom) + var(--scroll-pad, 28px));
+   scroll-padding-bottom: calc(env(safe-area-inset-bottom) + var(--scroll-pad, 28px));
 }
 
 /* לשפר בדפדפנים תומכי dvh/dvb */
