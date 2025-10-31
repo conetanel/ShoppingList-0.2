@@ -55,9 +55,10 @@ const SHOPPING_CACHE_KEY = 'cachedShoppingListV1';
 function setStickyHeight() {
   const el = document.getElementById('sticky-header-container');
   if (!el) return;
-  const h = el.offsetHeight;
+  const h = el.offsetHeight || 140; // fallback שלא יחתוך אם עוד 0
   document.documentElement.style.setProperty('--sticky-h', h + 'px');
 }
+setStickyHeight();
 
 // מדידה בתחילת טעינה, אחרי טעינת תמונות, ובכל שינוי גודל / שינוי תוכן
 window.addEventListener('DOMContentLoaded', setStickyHeight);
@@ -113,21 +114,13 @@ const headerContainer = document.getElementById("sticky-header-container");
 const overlay = document.getElementById('loading-overlay'); // מה-HTML של שלב 1
 const themeMeta = document.querySelector('meta[name="theme-color"]');
 
-// מציגים overlay כברירת מחדל עד שהתוכן מוכן
-if (overlay) document.body.classList.add('is-loading');
+
 
 function setThemeColor(color){
   try { themeMeta && themeMeta.setAttribute('content', color); } catch(_){}
 }
 
-function fadeOutOverlay(){
-  if(!overlay) return;
-  overlay.classList.add('fade-out');
-  overlay.addEventListener('transitionend', () => {
-    overlay.remove();
-  }, { once: true });
-  document.body.classList.remove('is-loading');
-}
+
 
 function updateStickyHeightVar() {
   const h = headerContainer.offsetHeight; // גובה כל הסטיקי (כותרת+סרגל)
@@ -205,26 +198,13 @@ function warmStartFromCaches() {
 // הפעלה מיידית — אם יש קאש, נקבל תצוגה מלאה תוך מילישניות
 const hadWarmStart = warmStartFromCaches();
 
-// overlay לא ייסגר לפני שחלפו 2 שניות
-let minTimerDone = false;
-setTimeout(() => {
-  minTimerDone = true;
-  maybeHideOverlay();
-}, 2000);
+
 
 // כשיש תוכן על המסך (מקאש או מרענון טרי)
-let contentReady = !!hadWarmStart;
 
-function maybeHideOverlay() {
-  if (minTimerDone && contentReady) fadeOutOverlay();
-}
 
-// חגורת בטיחות: כשעמוד 'loaded' — אשר שהתוכן מוכן וסגור אם אפשר
-window.addEventListener('load', () => {
-  // אם אין קאש/רשת – עדיין נסגור אחרי 2 שניות ונראה את ה־UI (גם אם הרשימה ריקה)
-  contentReady = true;
-  maybeHideOverlay();
-});
+
+
 
 // ===== END: WARM START + 2s OVERLAY TIMER =====
 
@@ -437,15 +417,11 @@ async function fetchAndRenderList() {
     }
   
     
-    // בסוף רינדור: סמן שהתוכן מוכן (יוריד overlay אם עברו 2 שניות)
-    contentReady = true;
-    maybeHideOverlay();
+
 
   } catch (err) {
     console.error("שגיאה בטעינה מגיליון:", err);
-    // ודא שלא נתקעים במסך טעינה
-  contentReady = true;
-  maybeHideOverlay();
+  
   }
 }
 
@@ -814,8 +790,7 @@ async function loadUserShoppingList(userId) {
 
 
 
-// אם היה קאש — יכול להיות שהתוכן כבר מוכן; נשאיר את הסגירה לטיימר
-if (hadWarmStart) maybeHideOverlay();
+
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
@@ -831,8 +806,7 @@ onAuthStateChanged(auth, async (user) => {
       renderList(allCategorizedItems);
       filterListByCategory('הכל');
       updateStickyHeightVar();
-      contentReady = true;
-      maybeHideOverlay();
+      
     }
 
     // 3) רענון שקט מה-Sheets (כולל שמירת קאש בפנים)
@@ -841,17 +815,11 @@ onAuthStateChanged(auth, async (user) => {
     // 4) שוב מדביקים מצב משתמש (לכסות מרוץ)
     await loadUserShoppingList(currentUserId);
 
-    // 5) עכשיו יש תוכן ודאי — סגור overlay אם עברו 2 שניות
-    contentReady = true;
-    maybeHideOverlay();
+   
 
   } else {
     signInAnonymously(auth).catch(console.error);
   }
 });
-window.addEventListener('unhandledrejection', () => {
-  contentReady = true;
-  try { maybeHideOverlay(); } catch(_) {}
-  setTimeout(() => { try { fadeOutOverlay(); } catch(_) {} }, 6000);
-});
+
 
