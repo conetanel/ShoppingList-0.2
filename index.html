@@ -13,38 +13,36 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="preload" as="image" href="icons/Background.svg">
   <link rel="preload" as="image" href="icons/logo.svg">
+    <!-- iPad Pro (2048×2732) -->
+<link rel="apple-touch-startup-image" href="/icons/splash/splash-2048.png"
+  media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+
+<!-- iPad (1668×2224 / 1640×2360) -->
+<link rel="apple-touch-startup-image" href="/icons/splash/splash-1668.png"
+  media="(device-width: 834px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+
+<!-- iPad Mini (1536×2048) -->
+<link rel="apple-touch-startup-image" href="/icons/splash/splash-1536.png"
+  media="(device-width: 768px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+
+<!-- iPhone 14 / 13 / 12 / 11 (1170×2532 / 1125×2436) -->
+<link rel="apple-touch-startup-image" href="/icons/splash/splash-1125.png"
+  media="(device-width: 375px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+
+<!-- iPhone XR / 11 / 8 Plus (828×1792 / 1080×1920 scaled) -->
+<link rel="apple-touch-startup-image" href="/icons/splash/splash-828.png"
+  media="(device-width: 414px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+
+<!-- iPhone 6 / 7 / 8 / SE2 / SE3 (750×1334) -->
+<link rel="apple-touch-startup-image" href="/icons/splash/splash-750.png"
+  media="(device-width: 375px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+
 
   <!-- ✅ Critical CSS: קודם, כדי למנוע הבזק לבן -->
  <!-- מונע “vh” קופצני: נעדיף svh כשאפשר -->
 <style id="critical-svh">
   /* צבע רקע זהה לכל המסכים (גם מאחורי הסטטוס־בר) */
   html, body { background:#F2F4F7; margin:0; }
-
-  /* האוברליי חייב לכסות את כל המסך “הקטן” מהפתיחה הראשונה */
-  #loading-overlay{
-    position:fixed; left:0; top:0; right:0; bottom:0;
-    z-index:9999; display:block;
-    background:
-      url('icons/Background.svg') center/cover no-repeat,
-      linear-gradient(180deg, rgba(255,255,255,.12), rgba(247,248,250,.18));
-    /* מונע איורעיות קומפוזיטינג שגורמות לבהוב */
-    will-change: transform, opacity;
-    transform: translateZ(0);
-    /* מרווחי safe-area כך ששום דבר לא ייחתך תחת ה־Home bar */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  /* מרכז לוגו בלי קשר לשינויים ב־safe-area */
-  #loading-overlay .overlay-content{
-    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    display:flex; flex-direction:column; align-items:center; gap:16px;
-  }
-  #loading-overlay .overlay-logo{
-    width:180px; max-width:220px; height:auto;
-    animation:logoPulse 1.4s ease-in-out infinite;
-  }
-  @keyframes logoPulse{0%{transform:scale(1);opacity:1}50%{transform:scale(1.03);opacity:.85}100%{transform:scale(1);opacity:1}}
 
   /* 🔑 השתמש ב-svh כברירת מחדל כדי למנוע קפיצת vh */
   #app-wrapper { height: 100svh; width:100vw; overflow:hidden; }
@@ -64,15 +62,7 @@
 </head>
 
 <!-- ❗ רק BODY אחד, עם המחלקה is-loading -->
-<body class="is-loading">
-
-  <!-- ❗ Overlay אחד בלבד -->
-  <div id="loading-overlay" role="status" aria-live="polite" aria-label="טוען">
-    <div class="overlay-content">
-      <img class="overlay-logo" src="./icons/logo.svg" alt="" aria-hidden="true">
-      <span class="sr-only">טוען…</span>
-    </div>
-  </div>
+<body>
 
   <div id="app-wrapper">
     <div id="sticky-header-container">
