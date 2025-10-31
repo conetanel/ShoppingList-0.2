@@ -498,32 +498,11 @@ html, body {
   overscroll-behavior-y: none;      /* כרום/אנדרואיד */
 }
 
-/* המעטפת בגובה מלא */
-#app-wrapper {
-  min-height: 100vh;
-  height: 100dvh;                   /* בטוח למקלדות/Notch */
-  overflow: hidden;
-  position: relative;
-}
-/* אם הדפדפן תומך ב-viewport הדינמי – עדיף */
-@supports (height: 100dvh) {
-  #app-wrapper {
-    min-height: 100dvh;
-    height: 100dvh;
-  }
-}
-/* תמיכה מעולה גם ב-iOS חדשים */
-@supports (height: 100dvb) {
-  #app-wrapper {
-    min-height: 100dvb;
-    height: 100dvb;
-  }
-}
+
 /* אזור גלילה יחיד לתוכן מתחת לסטיקי */
-/* ✅ הבלוק היחיד והסופי עבור #shopping-list-container */
+
 #shopping-list-container{
-  min-height: 0;                   /* הקריטי ב-Grid/Flex כדי לא לחסום גלילה */
-  min-width: 0;
+  height: calc(100svh - var(--sticky-h, 140px));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -535,17 +514,17 @@ html, body {
   scroll-padding-bottom: calc(env(safe-area-inset-bottom) + 28px);
 }
 
-/* 5. כלל תמיכה בגובה: אם הדפדפן לא תומך ב-dvh, נשתמש ב-vh */
-@supports not (height: 100dvh) {
-   #shopping-list-container {
-    height: calc(100vh - var(--sticky-h, 140px));
-   }
+/* אם יש dvh – נעדיף אותו */
+@supports (height: 100dvh){
+  #shopping-list-container{
+    height: calc(100dvh - var(--sticky-h, 140px));
+  }
 }
 
-/* תמיכה אופטימלית ב-iOS */
-@supports (height: 100dvb) {
-  #shopping-list-container {
-    height: calc(100dvb - var(--sticky-h, 140px));
+/* נפילה סופית ל-vh */
+@supports not (height: 100dvh){
+  #shopping-list-container{
+    height: calc(100vh - var(--sticky-h, 140px));
   }
 }
 #shopping-list-container::after{
@@ -585,95 +564,34 @@ html {
 /* שמור על ה-padding הקיים ל-safe area אצלך בהאדר */
 .header { padding-top: calc(20px + env(safe-area-inset-top)); }
 
-/* ====== OVERLAY (מאוחד, עם רקע ותמונת לוגו) ====== */
-:root{
-  --overlay-brand: #0b597d; /* לשימוש עתידי אם תרצה */
-}
 
-/* מצב "טעינה" חוסם גלילה */
-body.is-loading { overflow: hidden; }
+ש
 
-/* שכבת הפתיחה – גרדיאנט + התמונה שלך */
-#loading-overlay{
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: block;
-  background:
-    url('icons/Background.svg') center/cover no-repeat,
-    linear-gradient(180deg, rgba(255,255,255,.12), rgba(247,248,250,.18));
-}
 
-#loading-overlay.fade-out { opacity: 0; pointer-events: none; }
 
-#loading-overlay .overlay-content{
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%,-50%);
-  display: flex; flex-direction: column; align-items: center; gap: 16px;
-}
 
-#loading-overlay .overlay-logo{
-  width: 180px; max-width: 220px; height: auto;
-  animation: logoPulse 1.4s ease-in-out infinite;
-  will-change: transform, opacity;
-}
-@keyframes logoPulse{
-  0%{transform:scale(1);opacity:1}
-  50%{transform:scale(1.03);opacity:.85}
-  100%{transform:scale(1);opacity:1}
-}
-
-/* טקסט נגישות נסתר */
-.sr-only{
-  position: absolute !important;
-  width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0,0,0,0);overflow:hidden;white-space:nowrap;
-}
-
-/* נגישות: להפחית אנימציות */
-@media (prefers-reduced-motion: reduce){
-  #loading-overlay{ transition: none; }
-  .overlay-logo{ animation: none; }
-}
-/* ====== סוף overlay המאוחד ====== */
-
-/* חיזוק האנימציה ללוגו – לשים בסוף הקובץ */
-#loading-overlay .overlay-logo{
-  display: block;
-  width: clamp(120px, 28vw, 220px);
-  height: auto;
-  animation: logo-pulse 1.4s ease-in-out infinite !important;
-  will-change: transform, opacity;
-  pointer-events: none;
-}
-
-@keyframes logo-pulse{
-  0%   { transform: scale(1);    opacity: 1; }
-  50%  { transform: scale(1.03); opacity: .85; }
-  100% { transform: scale(1);    opacity: 1; }
-}
-
-/* במקרה שיש לך כלל שמבטל אנימציות בזמן הידרציה — ננעל את זה */
-.hydrating #loading-overlay .overlay-logo{
-  animation: logo-pulse 1.4s ease-in-out infinite !important;
-}
-/* -------- גובה מסך מלא תקין לכל דפדפנים -------- */
+/* ====== גובה מסך מלא תקין לכל דפדפנים ====== */
 #app-wrapper {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 100%;  /* ← שורה קריטית */
   overflow: hidden;
   position: relative;
-  height: 100vh;  /* ברירת מחדל */
+  height: 100vh;
 }
+/* דפדפנים שתומכים בגובה דינמי (Chrome/Android/iOS חדשים) */
 @supports (height: 100dvh) {
   #app-wrapper {
     height: 100dvh;
   }
 }
+
+/* iOS החדש (ממשלחת “viewport ב־פועל”) */
 @supports (height: 100dvb) {
   #app-wrapper {
     height: 100dvb;
   }
 }
-
 
 
 
