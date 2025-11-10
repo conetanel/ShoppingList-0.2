@@ -32,7 +32,7 @@ const db = initializeFirestore(app, {
 });
 
 
-// מניעת גלילה אנכית כאשר מתמקדים בסרגל
+// מניעת גלילה אנכית כאשר מתמקדים בסרגל (מהקוד המקורי שלך)
 const categoryFilterContainer = document.querySelector(".category-filter-container");
 categoryFilterContainer.addEventListener(
   "wheel",
@@ -47,25 +47,51 @@ let shoppingList = {};
 let allCategorizedItems = {};
 let currentUserId = null;
 
+/* ===== Detect iOS PWA & wire bottom bar ===== */
+const bottomBar = document.getElementById('bottom-bar');
+const shareIconHeader = document.getElementById('share-icon');
+
+function isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+function isStandalone() {
+  const iosStandalone = window.navigator.standalone === true;
+  const mqStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+  return iosStandalone || mqStandalone;
+}
+
+// לוגיקה להצגת סרגל התחתית ב-PWA
+(function initBottomBar() {
+  const runAsPWAonIOS = isIOS() && isStandalone();
+  if (runAsPWAonIOS) {
+    bottomBar.classList.remove('hidden');
+    if (shareIconHeader) shareIconHeader.style.display = 'none';
+  } else {
+    bottomBar.classList.add('hidden');
+    if (shareIconHeader) shareIconHeader.style.removeProperty('display');
+  }
+})();
+
 
 // --- LOCAL CACHE FOR INSTANT START ---
 const CACHE_KEY = 'cachedCategorizedItemsV1';
 const SHOPPING_CACHE_KEY = 'cachedShoppingListV1';
 
+// ✅ פונקציה חיונית לגרדיאנטים ב-CSS (שמירת גובה ה-sticky header במשתנה CSS)
 function setStickyHeight() {
   const el = document.getElementById('sticky-header-container');
   if (!el) return;
-  const h = el.offsetHeight || 140; // fallback שלא יחתוך אם עוד 0
+  const h = el.offsetHeight || 140; 
   document.documentElement.style.setProperty('--sticky-h', h + 'px');
 }
-setStickyHeight();
 
-// מדידה בתחילת טעינה, אחרי טעינת תמונות, ובכל שינוי גודל / שינוי תוכן
+setStickyHeight(); // הפעלה מיידית
+
+// מדידה מחודשת באמצעות אירועים ו-ResizeObserver
 window.addEventListener('DOMContentLoaded', setStickyHeight);
 window.addEventListener('load', setStickyHeight);
 window.addEventListener('resize', setStickyHeight);
 
-// יתפוס שינויי גובה דינמיים (כותרת משתנה, פילטרים וכו')
 const sticky = document.getElementById('sticky-header-container');
 if (sticky && 'ResizeObserver' in window) {
   const ro = new ResizeObserver(setStickyHeight);
@@ -92,60 +118,34 @@ function loadCategoriesCache() {
   } catch(_) { return null; }
 }
 
-function quickStartFromCache() {
-  const cached = loadCategoriesCache();
-  if (!cached) return false;
-
-  allCategorizedItems = cached;
-  renderCategoryFilters(allCategorizedItems);
-  renderList(allCategorizedItems);
-  filterListByCategory('הכל');
-  updateStickyHeightVar();
-  return true;
-}
-
-
-// המשתנים של ה-DOM
-const container = document.getElementById("shopping-list-container"); // רשימת הפריטים
-const loadingSpinner = document.getElementById("loading-spinner");
+const container = document.getElementById("shopping-list-container"); 
+const headerContainer = document.getElementById("sticky-header-container");
 const shareIcon = document.getElementById("share-icon");
 const categoryFilterWrapper = document.querySelector(".category-filter-wrapper");
-const headerContainer = document.getElementById("sticky-header-container");
-const overlay = document.getElementById('loading-overlay'); // מה-HTML של שלב 1
 const themeMeta = document.querySelector('meta[name="theme-color"]');
-
 
 
 function setThemeColor(color){
   try { themeMeta && themeMeta.setAttribute('content', color); } catch(_){}
 }
 
-
-
-function updateStickyHeightVar() {
-  const h = headerContainer.offsetHeight; // גובה כל הסטיקי (כותרת+סרגל)
-  document.documentElement.style.setProperty("--sticky-h", `${h}px`);
-}
-
+// ... שאר המשתנים והקבועים (isMockMode, SHEET_ID, COLOR_PALETTE, CATEGORY_ICONS) נשארים כפי שהם ...
 const isMockMode = false;
 const SHEET_ID = "11OxjXpAo3vWnzJFG738M8FjelkK1vBM09dHzYf78Ubs";
 const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 
-// פלטת צבעים חדשה עם הצבעים שבחרת
 const COLOR_PALETTE = [
-  { background: "#2fa062", text: "#ffffff" }, // 1 - טורקיז
-  { background: "#E6C56E", text: "#000000" }, // 2 - צהוב-חול
-  { background: "#E9A466", text: "#000000" }, // 3 - כתום-בהיר
-  { background: "#DD694A", text: "#ffffff" }, // 4 - כתום-אדמדם
-  { background: "#0b597d", text: "#ffffff" }, // 5 - כהה-כחול
+  { background: "#2fa062", text: "#ffffff" }, 
+  { background: "#E6C56E", text: "#000000" }, 
+  { background: "#E9A466", text: "#000000" }, 
+  { background: "#DD694A", text: "#ffffff" }, 
+  { background: "#0b597d", text: "#ffffff" }, 
 ];
 
-// מיפוי קטגוריות לצבעים קבועים
 const CATEGORY_COLORS = {
   הכל: { background: "#F2F4F7", text: "#000000" },
 };
 
-// מיפוי עבור שמות קטגוריות עם אייקונים
 const CATEGORY_ICONS = {
   הכל: "grid-outline",
   ירקות: "leaf-outline",
@@ -163,54 +163,11 @@ const CATEGORY_ICONS = {
   "חד פעמי ותבניות": "restaurant-outline",
   אחר: "pricetag-outline",
 };
+// ... סוף משתנים וקבועים ...
 
 
-// ===== BEGIN: WARM START + 2s OVERLAY TIMER =====
+// ===== BEGIN: WARM START + CACHE LOADING =====
 
-// מרנדר מיד מהקאש: קטגוריות + רשימת משתמש (shoppingList)
-function warmStartFromCaches() {
-  const cachedCats = loadCategoriesCache();
-  const cachedList = loadShoppingCache();
-
-  if (!cachedCats) return false;
-
-  allCategorizedItems = cachedCats;
-  shoppingList = cachedList || {};
-
-  // צבע נעים ל-theme-color בזמן מסך טעינה
-  const lightened = lightenColor('#F2F4F7', 0.5);
-  setThemeColor(lightened);
-
-  // הידרציה בלי אנימציות כדי למנוע הבהובים
-  container.classList.add('hydrating');
-  try {
-    renderCategoryFilters(allCategorizedItems);
-    renderList(allCategorizedItems);      // createItemElement חייב לכבד shoppingList בזמן יצירה
-    filterListByCategory('הכל');
-    updateStickyHeightVar();
-  } finally {
-    requestAnimationFrame(() => container.classList.remove('hydrating'));
-  }
-
-  return true;
-}
-
-// הפעלה מיידית — אם יש קאש, נקבל תצוגה מלאה תוך מילישניות
-const hadWarmStart = warmStartFromCaches();
-
-
-
-// כשיש תוכן על המסך (מקאש או מרענון טרי)
-
-
-
-
-
-// ===== END: WARM START + 2s OVERLAY TIMER =====
-
-
-
-// פונקציית עזר: מבהירה צבע ע"י הגברת ערכי RGB
 function lightenColor(color, percent) {
   let r, g, b;
   if (color.startsWith("#")) {
@@ -224,7 +181,6 @@ function lightenColor(color, percent) {
       g = parseInt(rgbValues[1]);
       b = parseInt(rgbValues[2]);
     } else {
-      console.error("Invalid RGB color format:", color);
       return color;
     }
   }
@@ -233,6 +189,36 @@ function lightenColor(color, percent) {
   b = Math.min(255, Math.floor(b + (255 - b) * percent));
   return `rgb(${r}, ${g}, ${b})`;
 }
+
+
+function warmStartFromCaches() {
+  const cachedCats = loadCategoriesCache();
+  const cachedList = loadShoppingCache();
+
+  if (!cachedCats) return false;
+
+  allCategorizedItems = cachedCats;
+  shoppingList = cachedList || {};
+
+  const lightened = lightenColor('#F2F4F7', 0.5);
+  setThemeColor(lightened);
+
+  container.classList.add('hydrating');
+  try {
+    renderCategoryFilters(allCategorizedItems);
+    renderList(allCategorizedItems);      
+    filterListByCategory('הכל');
+    setStickyHeight();
+  } finally {
+    requestAnimationFrame(() => container.classList.remove('hydrating'));
+  }
+
+  return true;
+}
+
+const hadWarmStart = warmStartFromCaches();
+
+// ===== END: WARM START + CACHE LOADING =====
 
 // פונקציית עזר: מפרידה אמוג'י ושם
 function extractEmojiAndName(category) {
@@ -249,21 +235,6 @@ function extractEmojiAndName(category) {
   return { emoji: null, name: name || "אחר" };
 }
 
-function applyPageGradientToHeaderStart(baseColor, lightenedColor) {
-  const headerEl = document.querySelector(".header");
-  if (!headerEl) return;
-  const stopPx = Math.round(headerEl.offsetHeight);
-  const blend = 120;
-  const gradient = `linear-gradient(
-    to bottom,
-    ${lightenedColor} 0px,
-    ${lightenedColor} ${stopPx}px,
-    ${baseColor} ${stopPx + blend}px,
-    ${baseColor} 100%
-  )`;
-  document.body.style.background = gradient;
-  document.body.style.backgroundAttachment = "scroll";
-}
 
 // סינון + עדכון צבעי רקע/הדר/גרדיאנט
 function filterListByCategory(categoryName) {
@@ -293,8 +264,7 @@ function filterListByCategory(categoryName) {
 
     // אזור הנוץ' + צבע ההדר
     document.documentElement.style.setProperty("--status-bg", lightenedColor);
-    const themeMeta = document.querySelector('meta[name="theme-color"]');
-    if (themeMeta) themeMeta.setAttribute("content", lightenedColor);
+    setThemeColor(lightenedColor);
 
     document.documentElement.style.setProperty("--header-bg", lightenedColor);
     const filterContainer = categoryFilterWrapper.parentElement;
@@ -321,11 +291,10 @@ function filterListByCategory(categoryName) {
     document.documentElement.style.setProperty("--header-bg", "#F2F4F7");
     document.body.style.background = "#F2F4F7";
     document.documentElement.style.setProperty("--status-bg", "#F2F4F7");
-    const themeMeta = document.querySelector('meta[name="theme-color"]');
-    if (themeMeta) themeMeta.setAttribute("content", "#F2F4F7");
+    setThemeColor("#F2F4F7");
   }
 
-  requestAnimationFrame(() => updateStickyHeightVar());
+  requestAnimationFrame(() => setStickyHeight());
 }
 
 // עדכון ה-UI על בסיס רשימת הקניות השמורה
@@ -364,7 +333,6 @@ function updateUIFromShoppingList() {
 }
 
 // טעינת הנתונים מ-Google Sheets או Mock
-//  fetchAndRenderList minimal UI side effects =====
 async function fetchAndRenderList() {
   if (isMockMode) {
     const mockData = {
@@ -378,7 +346,7 @@ async function fetchAndRenderList() {
       renderCategoryFilters(allCategorizedItems);
       renderList(allCategorizedItems);
       filterListByCategory("הכל");
-      updateStickyHeightVar();
+      setStickyHeight();
     } finally {
       requestAnimationFrame(() => container.classList.remove('hydrating'));
     }
@@ -411,7 +379,7 @@ async function fetchAndRenderList() {
       renderCategoryFilters(allCategorizedItems);
       renderList(allCategorizedItems);
       filterListByCategory("הכל");
-      updateStickyHeightVar();
+      setStickyHeight();
     } finally {
       requestAnimationFrame(() => container.classList.remove('hydrating'));
     }
@@ -425,13 +393,12 @@ async function fetchAndRenderList() {
   }
 }
 
-// ===== END PATCH F =====
-
 window.addEventListener('online', async () => {
   await fetchAndRenderList();
   if (currentUserId) await loadUserShoppingList(currentUserId);
 });
-// רינדור רשימת הקניות
+
+
 function renderList(categorizedItems) {
   container.innerHTML = "";
   for (const category in categorizedItems) {
@@ -740,7 +707,7 @@ function updateUIWithSavedList(savedList) {
         });
         if (itemControlsDiv) {
          itemControlsDiv.classList.remove("locked");
-         itemControlsDiv.classList.add("show-controls"); // ✅ חשוב לחשיפה ויזואלית
+         itemControlsDiv.classList.add("show-controls"); 
         }
       }
       
@@ -750,7 +717,7 @@ function updateUIWithSavedList(savedList) {
 
 // שמירת רשימת הקניות ב-Firebase
 function saveShoppingList(userId, list) {
-  saveShoppingCache(list); // ✅ נשמר מקומית מייד
+  saveShoppingCache(list); 
   const userDocRef = doc(db, "users", userId);
   setDoc(userDocRef, { shoppingList: list }, { merge: true })
     .then(() => console.log("רשימת קניות נשמרה בהצלחה!"))
@@ -767,13 +734,11 @@ async function loadUserShoppingList(userId) {
       if (data.shoppingList) {
         shoppingList = data.shoppingList;
 
-        // נשמור לקאש המקומי לטובת פתיחה מהירה הבאה
         saveShoppingCache(shoppingList);
 
         updateUIWithSavedList(shoppingList);
         console.log("רשימת קניות נטענה:", shoppingList);
 
-        // הבטחת יישום מצב גם אם רינדור היה אחרי
         updateUIFromShoppingList();
       }
     } else {
@@ -784,38 +749,24 @@ async function loadUserShoppingList(userId) {
   }
 }
 
-
-
-
-
-
-
-
-
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUserId = user.uid;
     console.log("משתמש מחובר עם מזהה:", currentUserId);
 
-    // 1) מצב משתמש (Firestore ינצל persistence מקומי)
     await loadUserShoppingList(currentUserId);
 
-    // 2) אם לא היה Warm Start אבל כבר יש קטגוריות בזיכרון — אפשר לרנדר
     if (!hadWarmStart && allCategorizedItems && Object.keys(allCategorizedItems).length > 0) {
       renderCategoryFilters(allCategorizedItems);
       renderList(allCategorizedItems);
       filterListByCategory('הכל');
-      updateStickyHeightVar();
+      setStickyHeight();
       
     }
 
-    // 3) רענון שקט מה-Sheets (כולל שמירת קאש בפנים)
     await fetchAndRenderList();
 
-    // 4) שוב מדביקים מצב משתמש (לכסות מרוץ)
     await loadUserShoppingList(currentUserId);
-
-   
 
   } else {
     signInAnonymously(auth).catch(console.error);
@@ -823,3 +774,41 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 
+/* ===== Bottom bar actions (skeletons) ===== */
+document.getElementById('btn-login')?.addEventListener('click', () => {
+  console.log('התחברות – נגדיר בהמשך');
+});
+
+document.getElementById('btn-my-lists')?.addEventListener('click', () => {
+  console.log('הרשימות שלי – נגדיר בהמשך');
+});
+
+document.getElementById('btn-reset')?.addEventListener('click', () => {
+  console.log('איפוס בחירה');
+  
+  shoppingList = {};
+  saveShoppingCache(shoppingList);
+  if (currentUserId) saveShoppingList(currentUserId, shoppingList);
+  updateUIFromShoppingList();
+  
+  document.querySelectorAll('.icon-toggle.active').forEach(el=>{
+    el.classList.remove('active');
+    el.setAttribute('aria-pressed','false');
+  });
+  document.querySelectorAll('.item-controls').forEach(ctrl=>{
+    ctrl.classList.add('locked');
+    ctrl.classList.remove('show-controls');
+  });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const shareIconHeader = document.getElementById('share-icon');
+  const bottomShareBtn = document.getElementById('btn-share');
+
+  if (bottomShareBtn && shareIconHeader) {
+    bottomShareBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      shareIconHeader.click(); // קורא לפונקציית השיתוף הקיימת בדיוק
+    });
+  }
+});
