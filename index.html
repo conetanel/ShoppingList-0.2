@@ -2,10 +2,10 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="רשימת קניות">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#F2F4F7">
 
@@ -13,57 +13,30 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="preload" as="image" href="icons/Background.svg">
   <link rel="preload" as="image" href="icons/logo.svg">
-    <!-- iPad Pro (2048×2732) -->
-<link rel="apple-touch-startup-image" href="/icons/splash/splash-2048.png"
+    <link rel="apple-touch-startup-image" href="/icons/splash/splash-2048.png"
   media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
 
-<!-- iPad (1668×2224 / 1640×2360) -->
 <link rel="apple-touch-startup-image" href="/icons/splash/splash-1668.png"
   media="(device-width: 834px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
 
-<!-- iPad Mini (1536×2048) -->
 <link rel="apple-touch-startup-image" href="/icons/splash/splash-1536.png"
   media="(device-width: 768px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
 
-<!-- iPhone 14 / 13 / 12 / 11 (1170×2532 / 1125×2436) -->
 <link rel="apple-touch-startup-image" href="/icons/splash/splash-1125.png"
   media="(device-width: 375px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
 
-<!-- iPhone XR / 11 / 8 Plus (828×1792 / 1080×1920 scaled) -->
 <link rel="apple-touch-startup-image" href="/icons/splash/splash-828.png"
   media="(device-width: 414px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
 
-<!-- iPhone 6 / 7 / 8 / SE2 / SE3 (750×1334) -->
 <link rel="apple-touch-startup-image" href="/icons/splash/splash-750.png"
   media="(device-width: 375px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
 
 
-  <!-- ✅ Critical CSS: קודם, כדי למנוע הבזק לבן -->
- <!-- מונע “vh” קופצני: נעדיף svh כשאפשר -->
-<style id="critical-svh">
-  /* צבע רקע זהה לכל המסכים (גם מאחורי הסטטוס־בר) */
-  html, body { background:#F2F4F7; margin:0; }
-
-  /* 🔑 השתמש ב-svh כברירת מחדל כדי למנוע קפיצת vh */
-  #app-wrapper { height: 100svh; width:100vw; overflow:hidden; }
-
-  /* אם svh לא זמין – נשתמש ב-dvh; ואם גם לא – ניפול ל-vh */
-  @supports (height: 100dvh) {
-    #app-wrapper { height: 100dvh; }
-  }
-  @supports not (height: 100svh) {
-    #app-wrapper { height: 100vh; }
-  }
-</style>
-
-  <!-- שאר ה-CSS שלך -->
   <link rel="stylesheet" href="style.css">
   <title>רשימת קניות סופרמרקט</title>
 </head>
 
-<!-- ❗ רק BODY אחד, עם המחלקה is-loading -->
 <body>
-
   <div id="app-wrapper">
     <div id="sticky-header-container">
       <header class="header">
@@ -76,16 +49,34 @@
     </div>
 
     <div id="shopping-list-container"></div>
+     <nav id="bottom-bar" class="hidden" role="navigation" aria-label="סרגל תחתון">
+    <button class="tab-btn" id="btn-login" type="button" aria-label="התחברות">
+      <ion-icon name="person-outline" aria-hidden="true"></ion-icon>
+      <span>התחברות</span>
+    </button>
+
+    <button class="tab-btn" id="btn-my-lists" type="button" aria-label="הרשימות שלי">
+      <ion-icon name="list-outline" aria-hidden="true"></ion-icon>
+      <span>הרשימות שלי</span>
+    </button>
+
+    <button class="tab-btn" id="btn-reset" type="button" aria-label="איפוס בחירה">
+      <ion-icon name="refresh-outline" aria-hidden="true"></ion-icon>
+      <span>איפוס</span>
+    </button>
+
+    <button class="tab-btn" id="btn-share" type="button" aria-label="שיתוף">
+      <ion-icon name="share-outline" aria-hidden="true"></ion-icon>
+      <span>שיתוף</span>
+    </button>
+  </nav>
   </div>
 
-  <!-- Ionicons -->
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 
-  <!-- האפליקציה שלך -->
   <script type="module" src="script.js"></script>
 
-  <!-- Service Worker -->
   <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js', { scope: './' })
@@ -93,5 +84,6 @@
       .catch(err => console.error('❌ Service Worker registration failed:', err));
   }
   </script>
+
 </body>
 </html>
