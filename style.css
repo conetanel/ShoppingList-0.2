@@ -9,12 +9,16 @@ body {
 }
 
 /* הגדרת גלילה על ה-body עצמו */
+/*html, body {
+  height: 100%;
+  overflow: hidden;             
+  overscroll-behavior-y: none;   
+}*/
+
 html, body {
   height: 100%;
-  overflow: hidden;               /* ← הגוף לא גולל */
-  overscroll-behavior-y: none;    /* ← לא מושך את כל הדף למעלה/למטה */
+  overflow: hidden;        /* ← הבעיה כאן */
 }
-
 /* New: Container for the sticky header and filter bar */
 #sticky-header-container{
   position: relative;              /* לא sticky */
@@ -593,7 +597,77 @@ html {
   }
 }
 
+/* ===== iOS-like Bottom Tab Bar ===== */
+:root {
+  /* גובה בסיס של הסרגל; יעודכן ב-JS בפועל */
+  --bottom-bar-h: 58px;
+  --bottom-bar-bg: rgba(255,255,255,0.92);
+  --bottom-bar-border: rgba(0,0,0,0.1);
+}
 
+/* הספייסר לתוכן – משתמש בגובה הסרגל + safe-area */
+#shopping-list-container::after{
+  content:"";
+  display:block;
+  height: calc(var(--bottom-bar-h) + env(safe-area-inset-bottom, 0px) + 8px);
+}
 
+/* הסרגל עצמו */
+#bottom-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: end;                 /* טקסט קטן מתחת לאייקון */
+  gap: 0;
+  padding: 10px 14px 40px;
+  background: var(--bottom-bar-bg);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-top: 0.5px solid var(--bottom-bar-border);
+}
 
+/* הסתרה נוחה כברירת מחדל (ייפתח ב-JS כש-PWA) */
+#bottom-bar.hidden { display: none; }
 
+/* כפתור סרגל */
+#bottom-bar .tab-btn{
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 4px 0 2px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #1c1c1e;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#bottom-bar .tab-btn:active { opacity: .6; }
+
+/* אייקון + כיתוב קטן (כמו בווטסאפ/טלגרם) */
+#bottom-bar .tab-btn ion-icon{
+  font-size: 24px;          /* 24–26 נראה מעולה */
+  line-height: 1;
+}
+
+#bottom-bar .tab-btn span{
+  font-size: 11px;          /* “טקסט קטנטן” */
+  line-height: 1;
+  letter-spacing: .2px;
+  color: #3a3a3c;
+}
+
+/* מצב מודגש (בעתיד כשנרצה), דוגמה: */
+#bottom-bar .tab-btn.active ion-icon,
+#bottom-bar .tab-btn.active span{ color: #007aff; }
+
+/* ודא שצביעת הרקע העליון משתלבת עם הגרדיאנט שלך */
+@supports (padding: env(safe-area-inset-top)) {
+  #bottom-bar { background: var(--bottom-bar-bg); }
+}
