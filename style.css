@@ -601,7 +601,10 @@ html {
 :root {
   /* גובה בסיס של הסרגל; יעודכן ב-JS בפועל */
   --bottom-bar-h: 58px;
-  --bottom-bar-bg: rgba(255,255,255,0.92);
+  --bottom-bar-bg: rgba(250, 250, 250, 0.92);
+  --bottom-bar-fg: #1c1c1e;                 /* צבע טקסט/אייקון רגיל */
+  --bottom-bar-fg-active: #007aff;          /* צבע אקטיבי */
+  --bottom-bar-sep: rgba(60,60,67,0.29);    /* קו מפריד בסגנון iOS */
   --bottom-bar-border: rgba(0,0,0,0.1);
 }
 
@@ -614,6 +617,7 @@ html {
 
 /* הסרגל עצמו */
 #bottom-bar {
+  
   position: fixed;
   inset-inline: 0;
   bottom: 0;
@@ -622,11 +626,11 @@ html {
   grid-template-columns: repeat(4, 1fr);
   align-items: end;                 /* טקסט קטן מתחת לאייקון */
   gap: 0;
-  padding: 10px 14px 40px;
+  padding: 7px 14px 35px;
   background: var(--bottom-bar-bg);
   -webkit-backdrop-filter: saturate(180%) blur(14px);
   backdrop-filter: saturate(180%) blur(14px);
-  border-top: 0.5px solid var(--bottom-bar-border);
+  border-top: 1px solid var(--bottom-bar-border);
 }
 
 /* הסתרה נוחה כברירת מחדל (ייפתח ב-JS כש-PWA) */
@@ -643,7 +647,7 @@ html {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: #1c1c1e;
+  color: var(--bottom-bar-fg);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -659,9 +663,18 @@ html {
 #bottom-bar .tab-btn span{
   font-size: 11px;          /* “טקסט קטנטן” */
   line-height: 1;
-  letter-spacing: .2px;
+   font-weight: 600;      /* עיבוי עדין */
+  letter-spacing: .15px; /* יציבות רינדור */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   color: #3a3a3c;
+  
 }
+#bottom-bar .tab-btn.active ion-icon,
+#bottom-bar .tab-btn.active span{
+  color: var(--bottom-bar-fg-active);
+}
+
 
 /* מצב מודגש (בעתיד כשנרצה), דוגמה: */
 #bottom-bar .tab-btn.active ion-icon,
