@@ -253,23 +253,8 @@ html, body {
     min-height: 80px; /* גובה מינימלי להבטחת תצוגה */
 }
 
-.category-filter-container::after {
-    content: '';
-    position: absolute;
-    bottom: 0; /* התחלה מהתחתית של הסרגל */
-    left: 0;
-    right: 0;
-    height: 30px; /* גובה הגרידיאנט - ניתן להתאים */
-    pointer-events: none; /* לא משפיע על זרימת התוכן */
-    z-index: 1; /* מעל התוכן אבל מתחת לסרגל */
-    background: var(--bottom-gradient, linear-gradient(to bottom, #F2F4F7, transparent)); /* גרידיאנט תחתון דיפולטי */
-    transform: translateY(100%); /* מזיז את הגרידיאנט מתחת לסרגל */
-}
-#shopping-list-container::after{
-  content: "";
-  display: block;
-  height: calc(env(safe-area-inset-bottom) + 32px); /* ספייסר אמיתי + safe-area */
-}
+
+
 
 .category-filter-container::-webkit-scrollbar {
     display: none; /* הסתרת סרגל גלילה ב-Chrome/Safari */
@@ -510,11 +495,9 @@ html, body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-
+  position: relative;
   padding: 15px 15px 12px;         /* החזרת ה-padding */
   box-sizing: border-box;
-
-  /* ריווח סיום מעל ה-Home Bar באייפון */
   scroll-padding-bottom: calc(env(safe-area-inset-bottom) + 28px);
 }
 
@@ -531,11 +514,7 @@ html, body {
     height: calc(100vh - var(--sticky-h, 140px));
   }
 }
-#shopping-list-container::after{
-  content:"";
-  display:block;
-  height: calc(env(safe-area-inset-bottom) + 24px);
-}
+
 
 /* סרגל הקטגוריות נשאר אופקי בלבד, לא “גורר” את העמוד */
 .category-filter-container {
@@ -612,8 +591,9 @@ html {
 #shopping-list-container::after{
   content:"";
   display:block;
-  height: calc(var(--bottom-bar-h) + env(safe-area-inset-bottom, 0px) + 8px);
+  height: calc(var(--bottom-bar-h) + env(safe-area-inset-bottom, 0px) + 32px);
 }
+
 
 /* הסרגל עצמו */
 #bottom-bar {
@@ -683,4 +663,118 @@ html {
 /* ודא שצביעת הרקע העליון משתלבת עם הגרדיאנט שלך */
 @supports (padding: env(safe-area-inset-top)) {
   #bottom-bar { background: var(--bottom-bar-bg); }
+}
+
+/*דיאלוג בקשת אישור לפני ריסט*/
+/* ===== Reset Sheet (Action Sheet) ===== */
+#reset-sheet-backdrop{
+  position: fixed; inset: 0; background: rgba(0,0,0,.28);
+  z-index: 1200; display: none; opacity: 0; transition: opacity .18s ease;
+}
+#reset-sheet{
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 1201;
+  background: rgba(255,255,255,.96);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-top-left-radius: 16px; border-top-right-radius: 16px;
+  box-shadow: 0 -8px 30px rgba(0,0,0,.18);
+  transform: translateY(100%); transition: transform .22s ease;
+  padding: 10px 14px calc(30px + env(safe-area-inset-bottom));
+}
+#reset-sheet.open + #reset-sheet-backdrop,
+#reset-sheet-backdrop.open{ display:block; opacity:1; }
+
+.reset-sheet-title {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  margin: 8px 0 14px;
+  color: var(--text-strong, #111);
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+.reset-actions{ display: grid; gap: 8px; margin: 6px 0 4px; }
+.reset-btn{
+  appearance: none; border: 0; border-radius: 12px; padding: 12px 14px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.reset-btn.warning{ background: var(--danger-red); color:#fff; }
+.reset-btn.secondary{ background:#f2f2f7; color:#111; }
+.reset-btn.secondary.disabled{ opacity:.5; cursor:not-allowed; }
+.reset-cancel{ background:#fff; color:#007aff; border: .5px solid rgba(0,0,0,.12); }
+
+/* ===== Tiny feedback animations ===== */
+@keyframes pop {
+  0%{ transform: scale(.92); }
+  55%{ transform: scale(1.06); }
+  100%{ transform: scale(1); }
+}
+.pop-anim{ animation: pop .22s ease-out; }
+
+@keyframes fadeShrink {
+  0%{ opacity:1; transform: scale(1); }
+  100%{ opacity:0; transform: scale(.96); }
+}
+.fade-out{ animation: fadeShrink .22s ease forwards; }
+
+/* רטט עדין לכפתור הסרגל בעת איפוס */
+@keyframes bump {
+  0%,100%{ transform: translateY(0); }
+  40%{ transform: translateY(1px); }
+}
+.bump{ animation: bump .16s ease; }
+
+
+#reset-sheet.open {
+  transform: translateY(0);
+}
+
+#reset-sheet { will-change: transform; }
+
+
+:root {
+  --danger-red: #DD694A; /* יוחלף מה-JS לצבע מהפלטה שלך */
+}
+
+
+:root{
+  --cat-bar-gap: 16px;       /* נשימה מתחת לסרגל */
+  --cat-fade-h: 46px;        /* גובה הדעיכה */
+  --slc-pad-top: 15px;         /* הפדינג העליון שיש לך על #shopping-list-container */  
+}
+
+/* נשימה מתחת לסרגל הקטגוריות */
+.category-filter-container{
+  padding-bottom: var(--cat-bar-gap);
+}
+
+
+/* שכבת ריכוך קבועה שמתחילה בדיוק מתחת להאדר */
+#cat-fade-overlay{
+  position: fixed;
+  left: 0; right: 0;
+  top: calc(var(--sticky-h, 140px) - 1px);  /* -1px לכיסוי החיתוך */
+  height: var(--cat-fade-h);
+  pointer-events: none;
+  z-index: 900;                   /* מעל התוכן, מתחת ל-bottom bar (שאתה שם על 1000) */
+  transform: translateZ(0);       /* יצוב קומפוזיט בספארי */
+  backface-visibility: hidden;
+
+  /* משתמש בצבע ההאדר שאתה כבר מגדיר ב-JS */
+  background: linear-gradient(
+    to bottom,
+    var(--header-bg, #F2F4F7) 0%,
+    rgba(0,0,0,0) 100%
+  );
+}
+
+/* אם יש מצב כהה/בהיר – תוכל להחליף כאן את הגרדיאנט לפי משתנים */
+4) JS — אין שינוי
+
+
+#list-bottom-spacer {
+  height: calc(var(--bottom-bar-h, 58px) + env(safe-area-inset-bottom, 0px) + 32px);
+  flex-shrink: 0;
+  pointer-events: none;
+  background: transparent;
 }
