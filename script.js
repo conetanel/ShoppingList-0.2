@@ -46,6 +46,7 @@ categoryFilterContainer.addEventListener(
 let shoppingList = {};
 let allCategorizedItems = {};
 let currentUserId = null;
+let currentCategory = 'הכל';
 
 /* ===== Detect iOS PWA & wire bottom bar ===== */
 const bottomBar = document.getElementById('bottom-bar');
@@ -117,6 +118,17 @@ function loadCategoriesCache() {
     return s ? JSON.parse(s) : null;
   } catch(_) { return null; }
 }
+function scrollListTop() {
+  const el = document.getElementById('shopping-list-container');
+  if (!el) return;
+  try {
+    el.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (_) {
+    // fallback לדפדפנים ישנים / לייב-סרבר מוזר
+    el.scrollTop = 0;
+  }
+}
+
 
 const container = document.getElementById("shopping-list-container"); 
 const headerContainer = document.getElementById("sticky-header-container");
@@ -145,6 +157,9 @@ const COLOR_PALETTE = [
 const CATEGORY_COLORS = {
   הכל: { background: "#F2F4F7", text: "#000000" },
 };
+
+const dangerFromPalette = (COLOR_PALETTE[3] && COLOR_PALETTE[3].background) || '#DD694A';
+document.documentElement.style.setProperty('--danger-red', dangerFromPalette);
 
 const CATEGORY_ICONS = {
   הכל: "grid-outline",
@@ -238,6 +253,7 @@ function extractEmojiAndName(category) {
 
 // סינון + עדכון צבעי רקע/הדר/גרדיאנט
 function filterListByCategory(categoryName) {
+  currentCategory = categoryName || 'הכל';
   const allCategoryWrappers = container.querySelectorAll(".category-wrapper");
   categoryFilterWrapper.querySelectorAll(".category-bubble").forEach((b) => b.classList.remove("active"));
 
@@ -633,14 +649,19 @@ function renderCategoryFilters(categorizedItems) {
   });
 
   categoryFilterWrapper.addEventListener("click", (event) => {
-    const target = event.target;
-    const bubbleElement = target.closest(".category-bubble");
-    if (bubbleElement) {
-      const selectedCategory = bubbleElement.dataset.category;
-      filterListByCategory(selectedCategory);
-      window.scrollTo({ top: headerContainer.offsetHeight, behavior: "smooth" });
-    }
+  const bubble = event.target && event.target.closest
+    ? event.target.closest(".category-bubble")
+    : null;
+  if (!bubble) return;
+
+  const selectedCategory = bubble.dataset.category;
+  filterListByCategory(selectedCategory);
+
+  // תן ל־DOM להתעדכן ואז גלול את הקונטיינר של הרשימה לראש.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(scrollListTop);
   });
+});
 }
 
 // לוגיקת שיתוף (Share)
@@ -773,6 +794,32 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
+function resetShoppingList() {
+  // 1) איפוס האובייקט בזיכרון
+  shoppingList = {};
+
+  // 2) שמירה לקאש המקומי
+  saveShoppingCache(shoppingList);
+
+  // 3) שמירה ל־Firestore (אם יש משתמש מחובר)
+  if (currentUserId) {
+    saveShoppingList(currentUserId, shoppingList);
+  }
+
+  // 4) עדכון UI — מבטל אייקון ירוק ומחביא בקרי כמות/מידה
+  document.querySelectorAll('.icon-toggle.active').forEach(el => {
+    el.classList.remove('active');
+    el.setAttribute('aria-pressed', 'false');
+  });
+
+  document.querySelectorAll('.item-controls').forEach(ctrl => {
+    ctrl.classList.add('locked');
+    ctrl.classList.remove('show-controls');
+  });
+
+  console.log("✅ הרשימה אופסה");
+}
+
 
 /* ===== Bottom bar actions (skeletons) ===== */
 document.getElementById('btn-login')?.addEventListener('click', () => {
@@ -783,23 +830,7 @@ document.getElementById('btn-my-lists')?.addEventListener('click', () => {
   console.log('הרשימות שלי – נגדיר בהמשך');
 });
 
-document.getElementById('btn-reset')?.addEventListener('click', () => {
-  console.log('איפוס בחירה');
-  
-  shoppingList = {};
-  saveShoppingCache(shoppingList);
-  if (currentUserId) saveShoppingList(currentUserId, shoppingList);
-  updateUIFromShoppingList();
-  
-  document.querySelectorAll('.icon-toggle.active').forEach(el=>{
-    el.classList.remove('active');
-    el.setAttribute('aria-pressed','false');
-  });
-  document.querySelectorAll('.item-controls').forEach(ctrl=>{
-    ctrl.classList.add('locked');
-    ctrl.classList.remove('show-controls');
-  });
-});
+document.getElementById('btn-reset')?.addEventListener('click', openResetSheet);
 
 document.addEventListener('DOMContentLoaded', () => {
   const shareIconHeader = document.getElementById('share-icon');
@@ -812,3 +843,188 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+
+///////////////
+/* לוגיקת דיאלוג אישור איפוס*/
+
+/** ---------- RESET: action sheet + logic ---------- **/
+
+// יוצר את ה-Action Sheet פעם אחת
+function ensureResetSheet() {
+  if (document.getElementById('reset-sheet')) return;
+
+  const sheet = document.createElement('div');
+  sheet.id = 'reset-sheet';
+  sheet.innerHTML = `
+    <div class="reset-sheet-title">איפוס הרשימה</div>
+    <div class="reset-actions">
+      <button class="reset-btn warning" id="btn-reset-selected">
+        איפוס פריטים מסומנים
+      </button>
+
+      <button class="reset-btn secondary" id="btn-reset-category" disabled>
+        איפוס פריטים מסומנים בקטגוריה <span id="reset-cat-name">—</span>
+      </button>
+
+      <button class="reset-btn reset-cancel" id="btn-reset-cancel">ביטול</button>
+    </div>
+  `;
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'reset-sheet-backdrop';
+
+  document.body.appendChild(sheet);
+  document.body.appendChild(backdrop);
+
+  // פתיחה/סגירה (כבר היו קיימות אצלך – שומרים)
+  function closeSheet() {
+    sheet.classList.remove('open');
+    backdrop.classList.remove('open');
+    setTimeout(()=>{ backdrop.style.display='none'; }, 220);
+  }
+  function openSheet() {
+    // עדכון מצב כפתור הקטגוריה בכל פתיחה
+    const catBtn = document.getElementById('btn-reset-category');
+    const catNameSpan = document.getElementById('reset-cat-name');
+    catNameSpan.textContent = currentCategory;
+    const canResetCategory = (currentCategory && currentCategory !== 'הכל');
+    catBtn.disabled = !canResetCategory;
+    catBtn.classList.toggle('disabled', !canResetCategory);
+
+    backdrop.style.display='block';
+    requestAnimationFrame(()=>{
+      sheet.classList.add('open');
+      backdrop.classList.add('open');
+    });
+  }
+
+  sheet.openSheet = openSheet;
+  sheet.closeSheet = closeSheet;
+
+  backdrop.addEventListener('click', closeSheet);
+  document.getElementById('btn-reset-cancel').addEventListener('click', closeSheet);
+
+  // איפוס מסומנים — עם אישור “אתה בטוח?”
+  document.getElementById('btn-reset-selected').addEventListener('click', async () => {
+    const ok = confirm('אתה בטוח שתרצה לאפס את כל הפריטים המסומנים?');
+    if (!ok) return;
+    await resetSelectedItemsWithFX();
+    closeSheet();
+  });
+
+  // איפוס מסומנים בקטגוריה הנוכחית
+  document.getElementById('btn-reset-category').addEventListener('click', async () => {
+    if (!currentCategory || currentCategory === 'הכל') return;
+    await resetCategorySelectedWithFX(currentCategory);
+    closeSheet();
+  });
+}
+
+// פותח את הדיאלוג
+function openResetSheet() {
+  ensureResetSheet();
+  const sheet = document.getElementById('reset-sheet');
+  sheet.openSheet();
+}
+
+
+// מחזיר Promise קטן עבור תזמון אנימציה
+const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+// אנימציית פידבק לכפתור האיפוס בתחתית
+function bumpResetButton() {
+  const btn = document.getElementById('btn-reset');
+  if (!btn) return;
+  btn.classList.add('bump');
+  setTimeout(()=>btn.classList.remove('bump'), 180);
+}
+
+/** איפוס פריטים מסומנים בלבד + פידבק ויזואלי (מתוקן) */
+async function resetSelectedItemsWithFX() {
+  bumpResetButton();
+
+  // 1) לוכדים את כל הפריטים המסומנים כרגע + שמותיהם (לפני שינויים ב-DOM)
+  const activeIcons = Array.from(document.querySelectorAll('.icon-toggle.active'));
+  if (activeIcons.length === 0) {
+    console.log('אין פריטים מסומנים לאיפוס.');
+    return;
+  }
+  const selectedNames = activeIcons.map(icon => {
+    const item = icon.closest('.item');
+    return item?.querySelector('.item-name')?.textContent?.trim();
+  }).filter(Boolean);
+
+  // 2) אנימציית יציאה קטנה רק על הפריטים המסומנים
+  activeIcons.forEach(icon => {
+    const item = icon.closest('.item');
+    if (item) item.classList.add('fade-out');
+  });
+
+  await wait(220); // תן לאנימציה לקרות
+
+  // 3) ניקוי ויזואלי רק על הפריטים המסומנים
+  activeIcons.forEach(icon => {
+    icon.classList.remove('active');
+    icon.setAttribute('aria-pressed','false');
+    const itemControls = icon.closest('.item')?.querySelector('.item-controls');
+    if (itemControls) {
+      itemControls.classList.add('locked');
+      itemControls.classList.remove('show-controls');
+    }
+  });
+  document.querySelectorAll('.item.fade-out').forEach(el => el.classList.remove('fade-out'));
+
+  // 4) מחיקה מהמודל — רק של הפריטים שהיו מסומנים
+  selectedNames.forEach(name => {
+    if (shoppingList[name]) delete shoppingList[name];
+  });
+
+  // 5) שמירה
+  saveShoppingCache(shoppingList);
+  if (currentUserId) saveShoppingList(currentUserId, shoppingList);
+
+  console.log('✅ אופסו רק הפריטים שסומנו.');
+}
+
+
+////////////////
+/*פונקציה חדשה שמאפסת רק פריטים מסומנים באותה קטגוריה*/
+async function resetCategorySelectedWithFX(categoryName) {
+  bumpResetButton();
+
+  // בוחרים רק פריטים מסומנים בתוך ה-wrapper של אותה קטגוריה
+  const wrappers = [...document.querySelectorAll(`.category-wrapper[data-category="${categoryName}"]`)];
+  const activeIcons = wrappers.flatMap(w =>
+    [...w.querySelectorAll('.icon-toggle.active')]
+  );
+
+  if (activeIcons.length === 0) {
+    console.log('אין פריטים מסומנים בקטגוריה:', categoryName);
+    return;
+  }
+
+  // אנימציה קצרה
+  activeIcons.forEach(icon => {
+    const item = icon.closest('.item');
+    if (item) item.classList.add('fade-out');
+  });
+  await wait(220);
+
+  // ניקוי UI + מודל + שמירה
+  activeIcons.forEach(icon => {
+    const item = icon.closest('.item');
+    const name = item?.querySelector('.item-name')?.textContent?.trim();
+    icon.classList.remove('active');
+    icon.setAttribute('aria-pressed','false');
+    const ctrl = item?.querySelector('.item-controls');
+    if (ctrl) { ctrl.classList.add('locked'); ctrl.classList.remove('show-controls'); }
+    if (name && shoppingList[name]) delete shoppingList[name];
+    if (item) item.classList.remove('fade-out');
+  });
+
+  saveShoppingCache(shoppingList);
+  if (currentUserId) saveShoppingList(currentUserId, shoppingList);
+
+  console.log(`✅ אופסו הפריטים המסומנים בקטגוריה: ${categoryName}`);
+}
