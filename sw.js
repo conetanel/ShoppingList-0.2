@@ -1,5 +1,5 @@
 // sw.js
-const SW_VERSION = 'v1.0.10';                // עדכן מספר לגרום לרענון
+const SW_VERSION = 'v1.0.11';                // עדכן מספר לגרום לרענון
 const APP_SHELL  = 'app-shell-' + SW_VERSION;
 const RUNTIME    = 'runtime-'   + SW_VERSION;
 
