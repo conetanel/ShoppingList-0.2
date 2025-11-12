@@ -1,38 +1,79 @@
-/* sw.js - Offline-first PWA with smart caching + background refresh */
-const SW_VERSION = 'v1.0.7';
-const APP_SHELL = 'app-shell-' + SW_VERSION;
-const RUNTIME = 'runtime-' + SW_VERSION;
+// sw.js
+const SW_VERSION = 'v1.0.8';                // עדכן מספר לגרום לרענון
+const APP_SHELL  = 'app-shell-' + SW_VERSION;
+const RUNTIME    = 'runtime-'   + SW_VERSION;
 
-/* ✔️ קבצי ליבה (App Shell) לטעינה מיידית גם בלי רשת */
+// בונה URL אבסולוטי יחסית ל-scope של ה-SW (עובד מעולה ב-GitHub Pages)
+const SCOPE_ORIGIN = self.registration.scope;
+const u = (path) => new URL(path, SCOPE_ORIGIN).href;
+
+// ❗ אל תשים '/' בפרויקט GH Pages – זה ישתמע כשורש הדומיין ויחטיא.
+// השתמש במסלולים יחסיים ל-scope:
 const PRECACHE_URLS = [
-  '/',                 // אם האתר ברוט; אם לא - הסר או עדכן לindex.html יחסי
-  '/index.html',       // ודא שם קובץ נכון
-  '/style.css',
-  '/script.js',
-  '/manifest.webmanifest',
-  '/icons/apple-touch-icon.png'
+  u('./index.html'),
+  u('./style.css'),
+  u('./script.js'),
+  u('./manifest.webmanifest'),
+
+  // 🎨 אייקונים כלליים
+  u('./icons/icon-192.png'),
+  u('./icons/logo.svg'),
+  u('./icons/Background.svg'),
+
+  // 🖼️ מסכי פתיחה (iOS)
+  u('./icons/splash/splash-750.png'),
+  u('./icons/splash/splash-828.png'),
+  u('./icons/splash/splash-1125.png'),
+  u('./icons/splash/splash-1242.png'),
+  u('./icons/splash/splash-1536.png'),
+  u('./icons/splash/splash-1668.png'),
+  u('./icons/splash/splash-2048.png'),
+
+  // 🤖 מסכי פתיחה + אייקונים לאנדרואיד
+  u('./icons/splash/android/splash-750.png'),
+  u('./icons/splash/android/splash-828.png'),
+  u('./icons/splash/android/splash-1125.png'),
+  u('./icons/splash/android/splash-1242.png'),
+  u('./icons/splash/android/splash-1536.png'),
+  u('./icons/splash/android/splash-1668.png'),
+  u('./icons/splash/android/splash-2048.png'),
+  u('./icons/splash/android/android-launchericon-48-48.png'),
+  u('./icons/splash/android/android-launchericon-72-72.png'),
+  u('./icons/splash/android/android-launchericon-96-96.png'),
+  u('./icons/splash/android/android-launchericon-144-144.png'),
+  u('./icons/splash/android/android-launchericon-192-192.png'),
+  u('./icons/splash/android/android-launchericon-512-512.png')
 ];
 
-/* ✔️ דומיינים צד-שלישי לשיטת stale-while-revalidate */
-const STALE_WHILE_REVALIDATE_HOSTS = new Set([
-  'unpkg.com',                                 // ionicons
-  'www.gstatic.com', 'gstatic.com',            // Firebase SDK
-  'www.googleapis.com',                        // לעתיד
-  'fonts.googleapis.com', 'fonts.gstatic.com'  // אם תשתמש בפונטים
-]);
-
-/* ✔️ נקודת ה-Google Sheets שלך (Network-first עם נפילה למטמון) */
-const SHEETS_ENDPOINT_PREFIX = 'https://docs.google.com/spreadsheets/d/';
-
-/* התקנה: פרה-קאש של ה-App Shell */
+// התקנה: לא משתמשים ב-cache.addAll ישירות, אלא נביא כל משאב,
+// נרשום לוג על נפילות, ונשמור רק את מי שהצליח
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
-  event.waitUntil(
-    caches.open(APP_SHELL).then((cache) => cache.addAll(PRECACHE_URLS))
-  );
+  event.waitUntil((async () => {
+    self.skipWaiting();
+    const cache = await caches.open(APP_SHELL);
+
+    const results = await Promise.allSettled(
+      PRECACHE_URLS.map(async (url) => {
+        try {
+          const res = await fetch(url, { cache: 'no-store' });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          await cache.put(url, res.clone());
+          return { url, ok: true };
+        } catch (err) {
+          console.warn('⚠️ Precache failed:', url, err?.message || err);
+          return { url, ok: false, err };
+        }
+      })
+    );
+
+    const failed = results.filter(r => r.value && !r.value.ok);
+    if (failed.length) {
+      console.warn('⚠️ Some precache entries failed:', failed.map(f => f.value.url));
+      // בכוונה לא זורקים שגיאה – שלא יפיל את כל ה-install
+    }
+  })());
 });
 
-/* הפעלה: ניקוי גרסאות ישנות */
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
@@ -44,6 +85,9 @@ self.addEventListener('activate', (event) => {
     await self.clients.claim();
   })());
 });
+
+// שאר ה-fetch handlers שלך יכולים להישאר כמו שהיו
+
 
 /* אסטרטגיות פניות רשת */
 self.addEventListener('fetch', (event) => {
