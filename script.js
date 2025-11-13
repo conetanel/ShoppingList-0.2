@@ -793,7 +793,7 @@ onAuthStateChanged(auth, async (user) => {
     signInAnonymously(auth).catch(console.error);
   }
 });
-
+/*======כפונקציית איפוס======*/
 function resetShoppingList() {
   // 1) איפוס האובייקט בזיכרון
   shoppingList = {};
