@@ -1,11 +1,20 @@
 // sw.js
-const SW_VERSION = 'v1.0.11';                // עדכן מספר לגרום לרענון
+const SW_VERSION = 'v1.1.0';                // עדכן מספר לגרום לרענון
 const APP_SHELL  = 'app-shell-' + SW_VERSION;
 const RUNTIME    = 'runtime-'   + SW_VERSION;
 
 // בונה URL אבסולוטי יחסית ל-scope של ה-SW (עובד מעולה ב-GitHub Pages)
-const SCOPE_ORIGIN = self.registration.scope;
+const SCOPE = self.registration.scope;
 const u = (path) => new URL(path, SCOPE_ORIGIN).href;
+
+// חייב להיות ברמה הגלובלית, לפני addEventListener('fetch', …)
+const STALE_WHILE_REVALIDATE_HOSTS = new Set([
+  'unpkg.com',                          // ionicons
+  'www.gstatic.com','gstatic.com',      // Firebase SDK
+  'www.googleapis.com',
+  'fonts.googleapis.com','fonts.gstatic.com'
+]);
+
 
 // ❗ אל תשים '/' בפרויקט GH Pages – זה ישתמע כשורש הדומיין ויחטיא.
 // השתמש במסלולים יחסיים ל-scope:
@@ -29,47 +38,32 @@ const PRECACHE_URLS = [
   u('./icons/splash/splash-1668.png'),
   u('./icons/splash/splash-2048.png'),
 
-  // 🤖 מסכי פתיחה + אייקונים לאנדרואיד
-  u('./icons/splash/android/splash-750.png'),
-  u('./icons/splash/android/splash-828.png'),
-  u('./icons/splash/android/splash-1125.png'),
-  u('./icons/splash/android/splash-1242.png'),
-  u('./icons/splash/android/splash-1536.png'),
-  u('./icons/splash/android/splash-1668.png'),
-  u('./icons/splash/android/splash-2048.png'),
-  u('./icons/splash/android/android-launchericon-48-48.png'),
-  u('./icons/splash/android/android-launchericon-72-72.png'),
-  u('./icons/splash/android/android-launchericon-96-96.png'),
-  u('./icons/splash/android/android-launchericon-144-144.png'),
-  u('./icons/splash/android/android-launchericon-192-192.png'),
-  u('./icons/splash/android/android-launchericon-512-512.png')
 ];
+
+const PRECACHE_SET = new Set(PRECACHE_URLS.map(p => new URL(p, SCOPE).href));
+
+const SHEETS_ENDPOINT_PREFIX = 'https://docs.google.com/spreadsheets/d/';
+
+
 
 // התקנה: לא משתמשים ב-cache.addAll ישירות, אלא נביא כל משאב,
 // נרשום לוג על נפילות, ונשמור רק את מי שהצליח
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil((async () => {
-    self.skipWaiting();
     const cache = await caches.open(APP_SHELL);
-
-    const results = await Promise.allSettled(
-      PRECACHE_URLS.map(async (url) => {
-        try {
-          const res = await fetch(url, { cache: 'no-store' });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          await cache.put(url, res.clone());
-          return { url, ok: true };
-        } catch (err) {
-          console.warn('⚠️ Precache failed:', url, err?.message || err);
-          return { url, ok: false, err };
-        }
-      })
-    );
-
-    const failed = results.filter(r => r.value && !r.value.ok);
-    if (failed.length) {
-      console.warn('⚠️ Some precache entries failed:', failed.map(f => f.value.url));
-      // בכוונה לא זורקים שגיאה – שלא יפיל את כל ה-install
+    const failures = [];
+    for (const href of PRECACHE_SET) {
+      try {
+        await cache.add(new Request(href, { cache: 'reload' }));
+      } catch (e) {
+        // לוג עדין במקום להפיל את כל ההתקנה
+        console.warn('⚠️ Precache failed:', href, e?.message || e);
+        failures.push(href);
+      }
+    }
+    if (failures.length) {
+      console.warn('⚠️ Some precache entries failed:', failures);
     }
   })());
 });
@@ -78,45 +72,41 @@ self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
     await Promise.all(
-      keys
-        .filter(k => k !== APP_SHELL && k !== RUNTIME)
-        .map(k => caches.delete(k))
+      keys.filter(k => k !== APP_SHELL && k !== RUNTIME)
+          .map(k => caches.delete(k))
     );
     await self.clients.claim();
   })());
 });
 
-// שאר ה-fetch handlers שלך יכולים להישאר כמו שהיו
-
-
-/* אסטרטגיות פניות רשת */
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // 1) ניווטים: החזר App Shell מהמטמון (SPA), ואז הרשת תרענן נתונים.
+  // ניווטים: החזר index.html מהקאש
   if (req.mode === 'navigate') {
     event.respondWith((async () => {
       const cache = await caches.open(APP_SHELL);
-      const cached = await cache.match('/index.html') || await cache.match('/'); 
+      const cached =
+        await cache.match(new URL('./index.html', SCOPE)) ||
+        await cache.match(new URL('./', SCOPE));
       if (cached) return cached;
-      // נפילה: אם אין במטמון (בפעם הראשונה), קח מהרשת ושמור
       try {
         const fresh = await fetch(req);
-        cache.put('/index.html', fresh.clone());
+        await cache.put(new URL('./index.html', SCOPE), fresh.clone());
         return fresh;
       } catch {
-        return new Response('<h1>Offline</h1>', {headers: {'Content-Type':'text/html'}});
+        return new Response('<h1>Offline</h1>', { headers: {'Content-Type':'text/html'} });
       }
     })());
     return;
   }
 
-  // 2) קבצי ה־App Shell עצמם → cache-first
-  if (PRECACHE_URLS.includes(url.pathname)) {
+  // סטטיקה ש־precache מכיר (בדיקה לפי href מלא)
+  if (PRECACHE_SET.has(url.href)) {
     event.respondWith((async () => {
       const cache = await caches.open(APP_SHELL);
-      const cached = await cache.match(req);
+      const cached = await cache.match(req, { ignoreSearch: true });
       if (cached) return cached;
       const fresh = await fetch(req);
       cache.put(req, fresh.clone());
@@ -125,29 +115,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3) ספריות צד שלישי (CDN/Firebase) → stale-while-revalidate
+  // צד שלישי – SWR
   if (STALE_WHILE_REVALIDATE_HOSTS.has(url.hostname)) {
     event.respondWith(staleWhileRevalidate(req));
     return;
   }
 
-  // 4) ה-Google Sheets שלך → network-first עם fallback למטמון האחרון
+  // Google Sheets – network-first
   if (req.url.startsWith(SHEETS_ENDPOINT_PREFIX)) {
     event.respondWith(networkFirstWithFallback(req));
     return;
   }
 
-  // 5) ברירת מחדל: נסה stale-while-revalidate למשאבים סטטיים אחרים
-  if (req.destination === 'style' || req.destination === 'script' || req.destination === 'image' || req.destination === 'font') {
+  // סטטיקה כללית – SWR
+  if (['style','script','image','font'].includes(req.destination)) {
     event.respondWith(staleWhileRevalidate(req));
     return;
   }
-  // לבקשות אחרות שאין להן אסטרטגיה — אל תפריע:
-  // (למשל בקשות פנימיות של Firestore SDK; את זה נטפל ב-IndexedDB דרך ה-SDK)
 });
 
-/* ---- Helpers ---- */
-
+// Helpers
 async function staleWhileRevalidate(req) {
   const cache = await caches.open(RUNTIME);
   const cached = await cache.match(req);
@@ -162,13 +149,11 @@ async function networkFirstWithFallback(req) {
   const cache = await caches.open(RUNTIME);
   try {
     const fresh = await fetch(req, { cache: 'no-store' });
-    // אם הבקשה הצליחה ונראית תקינה – שמור ורענן את ה-UI בבקשה
     if (fresh && fresh.ok) cache.put(req, fresh.clone());
     return fresh;
   } catch {
     const cached = await cache.match(req);
     if (cached) return cached;
-    // אין אינטרנט ואין מטמון – החזר תשובה ריקה שמתורגמת הודעת שגיאה ב-UI
     return new Response(JSON.stringify({ error: 'offline' }), { headers: { 'Content-Type': 'application/json'} });
   }
 }
