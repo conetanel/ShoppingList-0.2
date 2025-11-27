@@ -1,6 +1,15 @@
+
 /* Firebase SDK imports */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithRedirect,
+  GoogleAuthProvider,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+
 import {
   initializeFirestore,
   persistentLocalCache,
@@ -9,6 +18,7 @@ import {
   setDoc,
   getDoc
 } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
 
 
 // אובייקט firebaseConfig הייחודי שלך
@@ -31,22 +41,41 @@ const db = initializeFirestore(app, {
   })
 });
 
+// Google Sign-In provider
+const googleProvider = new GoogleAuthProvider();
+// אופציונלי: תמיד להראות בחירה בין חשבונות
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
+
 
 // מניעת גלילה אנכית כאשר מתמקדים בסרגל (מהקוד המקורי שלך)
 const categoryFilterContainer = document.querySelector(".category-filter-container");
-categoryFilterContainer.addEventListener(
-  "wheel",
-  (e) => {
-    if (e.deltaY !== 0) e.preventDefault();
-  },
-  { passive: false }
-);
+
+if (categoryFilterContainer) {
+  categoryFilterContainer.addEventListener(
+    "wheel",
+    (e) => {
+      if (e.deltaY !== 0) e.preventDefault();
+    },
+    { passive: false }
+  );
+} else {
+  console.warn('⚠️ .category-filter-container לא נמצא ב־DOM');
+}
 
 // משתנים גלובליים
 let shoppingList = {};
 let allCategorizedItems = {};
 let currentUserId = null;
+let currentUserEmail = null;
 let currentCategory = 'הכל';
+let isLinkedToSharedList = false;
+
+// ===== הגדרה לבדיקת הבר התחתון בדסקטופ =====
+const FORCE_BOTTOM_BAR = true; // ← בזמן בדיקות: true, בפרודקשן: false
+
 
 /* ===== Detect iOS PWA & wire bottom bar ===== */
 const bottomBar = document.getElementById('bottom-bar');
@@ -64,7 +93,11 @@ function isStandalone() {
 // לוגיקה להצגת סרגל התחתית ב-PWA
 (function initBottomBar() {
   const runAsPWAonIOS = isIOS() && isStandalone();
-  if (runAsPWAonIOS) {
+
+  // אם הדגל דולק – הבר יופיע בכל מצב, גם בדפדפן בדסקטופ
+  const shouldShowBottomBar = FORCE_BOTTOM_BAR || runAsPWAonIOS;
+
+  if (shouldShowBottomBar) {
     bottomBar.classList.remove('hidden');
     if (shareIconHeader) shareIconHeader.style.display = 'none';
   } else {
@@ -72,6 +105,86 @@ function isStandalone() {
     if (shareIconHeader) shareIconHeader.style.removeProperty('display');
   }
 })();
+
+// ===== User Menu Logic =====
+const userMenuBackdrop   = document.getElementById('user-menu-backdrop');
+const userMenuSheet      = document.getElementById('user-menu');
+const userMenuEmailLabel = document.getElementById('user-menu-email');
+const userMenuCancelBtn  = document.getElementById('user-menu-cancel');
+const userLogoutBtn      = document.getElementById('user-logout-btn');
+const userMergeBtn       = document.getElementById('user-merge-btn');
+const userDisconnectBtn  = document.getElementById('user-disconnect-btn');
+
+
+
+function openUserMenu() {
+  if (!userMenuSheet || !userMenuBackdrop) return;
+
+  // עדכון הטקסט של המייל
+  if (userMenuEmailLabel) {
+    userMenuEmailLabel.textContent = currentUserEmail
+      ? `מחובר כ־ ${currentUserEmail}`
+      : 'לא מחובר';
+  }
+
+  updateUserMenuState();
+  userMenuSheet.classList.remove('hidden');
+  userMenuBackdrop.classList.remove('hidden');
+
+  requestAnimationFrame(() => {
+    userMenuSheet.classList.add('show');
+    userMenuBackdrop.classList.add('show');
+  });
+}
+
+function closeUserMenu() {
+  if (!userMenuSheet || !userMenuBackdrop) return;
+
+  userMenuSheet.classList.remove('show');
+  userMenuBackdrop.classList.remove('show');
+
+  setTimeout(() => {
+    userMenuSheet.classList.add('hidden');
+    userMenuBackdrop.classList.add('hidden');
+  }, 240);
+}
+
+if (userMenuCancelBtn) {
+  userMenuCancelBtn.addEventListener('click', closeUserMenu);
+}
+if (userMenuBackdrop) {
+  userMenuBackdrop.addEventListener('click', closeUserMenu);
+}
+
+// בינתיים – placeholders ללחצנים שבתפריט:
+if (userMergeBtn) {
+  userMergeBtn.addEventListener('click', () => {
+    console.log('🧑‍🤝‍🧑 איחוד רשימות – נבנה בשלב הבא');
+    alert('איחוד רשימות יתווסף בשלב הבא של הפיתוח 🙂');
+  });
+}
+
+if (userDisconnectBtn) {
+  userDisconnectBtn.addEventListener('click', () => {
+    // בהמשך: שבירת חיבור מ-groupId
+    alert('שבירת חיבור תופעל אחרי שנגדיר מנגנון רשימה משותפת (groupId).');
+  });
+}
+
+if (userLogoutBtn) {
+  userLogoutBtn.addEventListener('click', async () => {
+    const ok = confirm('להתנתק מהמשתמש המחובר?');
+    if (!ok) return;
+    try {
+      await signOut(auth);
+      closeUserMenu();
+    } catch (err) {
+      console.error('שגיאה בהתנתקות:', err);
+      alert('שגיאה בהתנתקות: ' + (err.message || ''));
+    }
+  });
+}
+
 
 
 // --- LOCAL CACHE FOR INSTANT START ---
@@ -86,7 +199,64 @@ function setStickyHeight() {
   document.documentElement.style.setProperty('--sticky-h', h + 'px');
 }
 
-setStickyHeight(); // הפעלה מיידית
+
+// ===== Auth Sheet Logic =====
+const authBackdrop   = document.getElementById('auth-backdrop');
+const authSheet      = document.getElementById('auth-sheet');
+const authForm       = document.getElementById('auth-form');
+const authEmailInput = document.getElementById('auth-email');
+const authPassInput  = document.getElementById('auth-password');
+const authToggleBtn  = document.getElementById('auth-toggle-mode');
+const authCancelBtn  = document.getElementById('auth-cancel');
+const authStatus     = document.getElementById('auth-status');
+const authSubmitBtn  = document.getElementById('auth-submit-btn');
+
+let authMode = 'login'; // 'login' או 'signup'
+
+function openAuthSheet() {
+  if (!authSheet || !authBackdrop) return;
+  authSheet.classList.remove('hidden');
+  authBackdrop.classList.remove('hidden');
+  // קצת delay כדי שהאנימציה תעבוד יפה
+  requestAnimationFrame(() => {
+    authSheet.classList.add('show');
+    authBackdrop.classList.add('show');
+  });
+  authStatus.textContent = '';
+  authStatus.className = 'auth-status';
+}
+
+function closeAuthSheet() {
+  if (!authSheet || !authBackdrop) return;
+  authSheet.classList.remove('show');
+  authBackdrop.classList.remove('show');
+  setTimeout(() => {
+    authSheet.classList.add('hidden');
+    authBackdrop.classList.add('hidden');
+  }, 240);
+}
+
+if (authCancelBtn && authBackdrop) {
+  authCancelBtn.addEventListener('click', closeAuthSheet);
+  authBackdrop.addEventListener('click', closeAuthSheet);
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  if (authMode === 'login') {
+    authSubmitBtn.textContent = 'התחברות';
+    authToggleBtn.textContent = 'אין לך משתמש? הרשם';
+  } else {
+    authSubmitBtn.textContent = 'יצירת משתמש חדש';
+    authToggleBtn.textContent = 'יש לך משתמש? התחבר';
+  }
+}
+
+if (authToggleBtn) {
+  authToggleBtn.addEventListener('click', () => {
+    setAuthMode(authMode === 'login' ? 'signup' : 'login');
+  });
+}
 
 // מדידה מחודשת באמצעות אירועים ו-ResizeObserver
 window.addEventListener('DOMContentLoaded', setStickyHeight);
@@ -210,7 +380,7 @@ function warmStartFromCaches() {
   const cachedCats = loadCategoriesCache();
   const cachedList = loadShoppingCache();
 
-  if (!cachedCats) return false;
+  if (!cachedCats || !container) return false;  // ← בול
 
   allCategorizedItems = cachedCats;
   shoppingList = cachedList || {};
@@ -232,7 +402,7 @@ function warmStartFromCaches() {
 }
 
 const hadWarmStart = warmStartFromCaches();
-
+fetchAndRenderList();
 // ===== END: WARM START + CACHE LOADING =====
 
 // פונקציית עזר: מפרידה אמוג'י ושם
@@ -762,8 +932,10 @@ async function loadUserShoppingList(userId) {
 
         updateUIFromShoppingList();
       }
+      isLinkedToSharedList = !!data.groupId;
     } else {
       console.log("לא נמצאה רשימה שמורה למשתמש זה.");
+      isLinkedToSharedList = false;
     }
   } catch (error) {
     console.error("שגיאה בקבלת נתונים:", error);
@@ -773,26 +945,36 @@ async function loadUserShoppingList(userId) {
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUserId = user.uid;
-    console.log("משתמש מחובר עם מזהה:", currentUserId);
+    currentUserEmail = user.email || null;
 
-    await loadUserShoppingList(currentUserId);
+    console.log("🔵 מחובר עם Google:", currentUserEmail);
 
-    if (!hadWarmStart && allCategorizedItems && Object.keys(allCategorizedItems).length > 0) {
-      renderCategoryFilters(allCategorizedItems);
-      renderList(allCategorizedItems);
-      filterListByCategory('הכל');
-      setStickyHeight();
-      
+    // --- שינוי האייקון למצב מחובר ---
+    if (loginBtn) {
+      loginBtn.classList.add("connected");
+      const icon = loginBtn.querySelector("ion-icon");
+      if (icon) icon.setAttribute("name", "person"); // אייקון מלא
     }
-
-    await fetchAndRenderList();
 
     await loadUserShoppingList(currentUserId);
 
   } else {
-    signInAnonymously(auth).catch(console.error);
+    currentUserId = null;
+    currentUserEmail = null;
+    console.log("⚪ משתמש אורח");
+
+    // --- החזרת האייקון למצב רגיל ---
+    if (loginBtn) {
+      loginBtn.classList.remove("connected");
+      const icon = loginBtn.querySelector("ion-icon");
+      if (icon) icon.setAttribute("name", "person-outline");
+    }
   }
 });
+
+
+
+
 /*======כפונקציית איפוס======*/
 function resetShoppingList() {
   // 1) איפוס האובייקט בזיכרון
@@ -821,10 +1003,48 @@ function resetShoppingList() {
 }
 
 
+//////////פונקציה שמעדכנת את מצב כפתור "שבירת חיבור"//////
+function updateUserMenuState() {
+  if (!userDisconnectBtn) return;
+
+  if (isLinkedToSharedList) {
+    userDisconnectBtn.disabled = false;
+    userDisconnectBtn.classList.remove('hidden');
+  } else {
+    userDisconnectBtn.disabled = true;
+    userDisconnectBtn.classList.add('hidden'); // או רק disabled אם אתה רוצה שיישאר גלוי אבל אפור
+  }
+}
+
 /* ===== Bottom bar actions (skeletons) ===== */
-document.getElementById('btn-login')?.addEventListener('click', () => {
-  console.log('התחברות – נגדיר בהמשך');
-});
+const loginBtn = document.getElementById('btn-login');
+
+if (loginBtn) {
+  loginBtn.addEventListener('click', async () => {
+    // אם כבר מחובר – (אפשר במקום זה לפתוח user menu, אבל נשאיר לפי הלוגיקה שלך)
+    if (currentUserId) {
+      const ok = confirm('להתנתק מהמשתמש המחובר?');
+      if (!ok) return;
+      try {
+        await signOut(auth);
+      } catch (err) {
+        console.error('שגיאה בהתנתקות:', err);
+      }
+      return;
+    }
+
+    // תמיד popup – גם ב-iOS, גם ב-PWA
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error('שגיאה בהתחברות Google:', err);
+      alert('שגיאה בהתחברות עם Google: ' + (err.code || '') + '\n' + (err.message || ''));
+    }
+  });
+}
+
+
+
 
 document.getElementById('btn-my-lists')?.addEventListener('click', () => {
   console.log('הרשימות שלי – נגדיר בהמשך');
@@ -844,6 +1064,47 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+
+if (authForm) {
+  authForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = authEmailInput.value.trim();
+    const password = authPassInput.value;
+
+    authStatus.textContent = '';
+    authStatus.className = 'auth-status';
+
+    if (!email || !password) {
+      authStatus.textContent = 'נא למלא אימייל וסיסמה';
+      authStatus.classList.add('error');
+      return;
+    }
+
+    try {
+      if (authMode === 'login') {
+        await signInWithEmailAndPassword(auth, email, password);
+        authStatus.textContent = 'מחובר בהצלחה';
+        authStatus.classList.add('success');
+      } else {
+        await createUserWithEmailAndPassword(auth, email, password);
+        authStatus.textContent = 'משתמש נוצר ומחובר';
+        authStatus.classList.add('success');
+      }
+
+      // נסגור את ה-sheet קצת אחרי feedback קצר
+      setTimeout(closeAuthSheet, 350);
+    } catch (err) {
+      console.error('Auth error:', err);
+      authStatus.textContent =
+        err.code === 'auth/wrong-password'
+          ? 'סיסמה לא נכונה'
+          : err.code === 'auth/user-not-found'
+          ? 'לא נמצא משתמש. נסה להירשם'
+          : 'שגיאה בהתחברות: ' + (err.message || '');
+      authStatus.classList.add('error');
+    }
+  });
+}
 
 ///////////////
 /* לוגיקת דיאלוג אישור איפוס*/
@@ -1028,3 +1289,22 @@ async function resetCategorySelectedWithFX(categoryName) {
 
   console.log(`✅ אופסו הפריטים המסומנים בקטגוריה: ${categoryName}`);
 }
+function hideHtmlSplash() {
+  const splash = document.getElementById('html-splash');
+  if (!splash) return;
+
+  splash.classList.add('hide');
+
+  // אחרי האנימציה – נוריד לגמרי מה-DOM
+  setTimeout(() => {
+    if (splash && splash.parentNode) {
+      splash.parentNode.removeChild(splash);
+    }
+  }, 400);
+}
+
+// כשכל העמוד נטען (כולל CSS, תמונות וכו’)
+window.addEventListener('load', () => {
+  // אפשר דיליי קטן כדי לתת לכל ה־JS שלך לסיים לגרדֵר את הרשימה
+  setTimeout(hideHtmlSplash, 300);
+});
