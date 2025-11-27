@@ -7,15 +7,14 @@
   <meta name="apple-mobile-web-app-title" content="רשימת קניות">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#F2F4F7">
+  <meta name="theme-color" content="#97CFB0"
 
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="preload" as="image" href="icons/Background.svg">
   <link rel="preload" as="image" href="icons/logo.svg">
 
   <!-- ✅ Full iOS Splash Screen Set (portrait + landscape) -->
-<!-- iPhone & iPod -->
-<!-- iPhone & iPod -->
+
 <link rel="apple-touch-startup-image" href="/ShoppingList-0.2/icons/splash/apple-splash-640-1136.jpg"
   media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
 <link rel="apple-touch-startup-image" href="/ShoppingList-0.2/icons/splash/apple-splash-1136-640.jpg"
@@ -82,11 +81,83 @@
 <link rel="apple-touch-startup-image" href="/ShoppingList-0.2/icons/splash/apple-splash-2360-1640.jpg"
   media="(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)">
 
+
+<style>
+  :root {
+    /* ערכים התחלתיים לפני שה-JS מודד משהו */
+    --status-bg: #97CFB0;
+    --header-bg: #97CFB0;
+    --body-bg: #97CFB0;
+    --sticky-h: 140px;       /* גובה משוער של ההאדר */
+    --bottom-bar-h: 58px;    /* כמו שהגדרת לסרגל התחתון */
+  }
+
+  html {
+    background: var(--status-bg);
+  }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, system-ui, sans-serif;
+    background: var(--body-bg);
+    overflow: hidden;
+  }
+
+  #app-wrapper {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 100%;
+    height: 100vh;
+    overflow: hidden;
+  }
+  @supports (height: 100dvh) {
+    #app-wrapper {
+      height: 100dvh;
+    }
+  }
+
+  #sticky-header-container {
+    background: var(--header-bg);
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    padding-top: calc(20px + env(safe-area-inset-top));
+    box-sizing: border-box;
+  }
+
+  #shopping-list-container {
+    height: calc(100vh - var(--sticky-h));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  @supports (height: 100dvh) {
+    #shopping-list-container {
+      height: calc(100dvh - var(--sticky-h));
+    }
+  }
+
+  /* שהאזור של הנוץ’ יהיה בצבע הנכון ישר מהפריים הראשון */
+  @supports (padding: env(safe-area-inset-top)) {
+    html { background: var(--status-bg); }
+  }
+</style>
+
+
   <link rel="stylesheet" href="style.css">
   <title>רשימת קניות סופרמרקט</title>
 </head>
 
 <body>
+  
+  <div id="html-splash">
+  
+  </div>
+
+
   <div id="app-wrapper">
     <div id="sticky-header-container">
       <header class="header">
@@ -123,10 +194,73 @@
   </nav>
   </div>
 
-  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 
-  <script type="module" src="script.js"></script>
+<!-- ===== Auth Sheet (Login / Signup) ===== -->
+<div id="auth-backdrop" class="auth-backdrop hidden"></div>
+<div id="auth-sheet" class="auth-sheet hidden" aria-hidden="true">
+  <div class="auth-title">התחברות לרשימת הקניות</div>
+
+  <form id="auth-form" class="auth-form">
+    <label class="auth-label">
+      כתובת אימייל
+      <input type="email" id="auth-email" required autocomplete="email" />
+    </label>
+
+    <label class="auth-label">
+      סיסמה
+      <input type="password" id="auth-password" required autocomplete="current-password" />
+    </label>
+
+    <div class="auth-actions">
+      <button type="submit" class="auth-primary-btn" id="auth-submit-btn">
+        התחברות
+      </button>
+      <button type="button" class="auth-secondary-btn" id="auth-toggle-mode">
+        אין לך משתמש? הרשם
+      </button>
+    </div>
+  </form>
+
+  <button type="button" class="auth-cancel-btn" id="auth-cancel">ביטול</button>
+
+  <div class="auth-status" id="auth-status" aria-live="polite"></div>
+</div>
+
+<!-- ===== User Menu Sheet ===== -->
+<div id="user-menu-backdrop" class="user-menu-backdrop hidden"></div>
+
+<div id="user-menu" class="user-menu hidden" role="dialog" aria-modal="true" aria-labelledby="user-menu-title">
+  <div class="user-menu-title" id="user-menu-title">
+    פרטי משתמש
+  </div>
+
+  <div class="user-menu-email" id="user-menu-email">
+    לא מחובר
+  </div>
+
+  <div class="user-menu-actions">
+    <button type="button" class="user-menu-btn" id="user-merge-btn">
+       איחוד רשימות 
+    </button>
+
+    <button type="button" class="user-menu-btn user-menu-btn-danger" id="user-disconnect-btn" disabled>
+      🔗 שבירת חיבור מרשימה משותפת
+    </button>
+
+    <button type="button" class="user-menu-btn" id="user-logout-btn">
+       התנתקות
+    </button>
+  </div>
+
+  <button type="button" class="user-menu-cancel" id="user-menu-cancel">
+    ביטול
+  </button>
+</div>
+
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+<script type="module" src="script.js"></script>
 
 <script>
 if ('serviceWorker' in navigator) {
