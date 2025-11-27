@@ -1028,7 +1028,8 @@ if (loginBtn) {
       try {
         await signOut(auth);
       } catch (err) {
-        console.error('שגיאה בהתנתקות:', err);
+        console.error('שגיאה בהתחברות Google:', err.code, err.message);
+        alert('שגיאה בהתחברות עם Google: ' + (err.code || '') + ' ' + (err.message || ''));
       }
       return;
     }
