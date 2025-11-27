@@ -1,7 +1,7 @@
 /* General body and font styling */
 body {
     font-family: -apple-system, system-ui, sans-serif;
-    background-color: #F2F4F7;
+    background-color: var(--body-bg);
     margin: 0;
     padding: 0;
     overflow-x: hidden;
@@ -331,7 +331,7 @@ html, body {
 
 /* תיקוני Safe Area */
 .header { padding-top: calc(20px + env(safe-area-inset-top)); }
-body { background-color: #f2f2f7; }
+
 
 
 /* כפתור אייקון במקום הטוגל */
@@ -536,12 +536,14 @@ html, body {
   margin-bottom: var(--scroll-pad, 28px);
 }
 :root {
-  --status-bg: #F2F4F7; /* ברירת מחדל */
+  --status-bg: #97CFB0;
+  --header-bg: #97CFB0;
+  --body-bg: #97CFB0;
 }
 
 /* אזור הנוץ’ לוקח רקע מה-html */
 html {
-  background: var(--status-bg, #F2F4F7);
+  background: var(--status-bg);
 }
 
 /* שמור על ה-padding הקיים ל-safe area אצלך בהאדר */
@@ -769,7 +771,7 @@ html {
 }
 
 /* אם יש מצב כהה/בהיר – תוכל להחליף כאן את הגרדיאנט לפי משתנים */
-4) JS — אין שינוי
+
 
 
 #list-bottom-spacer {
@@ -777,4 +779,278 @@ html {
   flex-shrink: 0;
   pointer-events: none;
   background: transparent;
+}
+
+/* ===== In-app Splash Overlay ===== */
+#html-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  background-color: #97CFB0;
+
+  /* שים לב ל־; בסוף השורה ↓↓↓ */
+  background-image: url("./icons/splash/splash.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+#html-splash.hide {
+  opacity: 0;
+}
+
+
+/* ===== Auth Sheet (bottom sheet בסגנון iOS) ===== */
+
+.auth-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.28);
+  z-index: 1300;
+  opacity: 0;
+  transition: opacity .18s ease;
+  pointer-events: none;
+}
+
+.auth-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1301;
+  background: rgba(255,255,255,.96);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  box-shadow: 0 -8px 30px rgba(0,0,0,.18);
+  transform: translateY(100%);
+  transition: transform .24s ease;
+  padding: 16px 18px calc(20px + env(safe-area-inset-bottom));
+  direction: rtl;
+  box-sizing: border-box;
+}
+
+.auth-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.auth-sheet.show {
+  transform: translateY(0);
+}
+
+.auth-sheet.hidden,
+.auth-backdrop.hidden {
+  display: none;
+}
+
+.auth-title {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  margin: 4px 0 16px;
+  color: #111;
+}
+
+.auth-form {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  display: grid;
+  gap: 4px;
+}
+
+.auth-label input {
+  font-size: 15px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.12);
+  outline: none;
+}
+
+.auth-label input:focus {
+  border-color: #007aff;
+  box-shadow: 0 0 0 1px rgba(0,122,255,.3);
+}
+
+.auth-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.auth-primary-btn,
+.auth-secondary-btn,
+.auth-cancel-btn {
+  appearance: none;
+  border-radius: 12px;
+  border: none;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-primary-btn {
+  flex: 2;
+  background: #007aff;
+  color: #fff;
+}
+
+.auth-secondary-btn {
+  flex: 3;
+  background: #f2f2f7;
+  color: #111;
+}
+
+.auth-cancel-btn {
+  margin-top: 8px;
+  width: 100%;
+  background: transparent;
+  color: #007aff;
+}
+
+.auth-status {
+  margin-top: 6px;
+  min-height: 18px;
+  font-size: 13px;
+  text-align: center;
+  color: #666;
+}
+.auth-status.error { color: #DD694A; }
+.auth-status.success { color: #2fa062; }
+
+
+/* מצב ברירת מחדל: התחברות רגילה, אייקון אפור */
+#btn-login ion-icon {
+  color: #3a3a3c;
+}
+
+/* מצב מחובר: אותו כפתור, רק מקבל class 'connected' והאייקון נהיה ירוק */
+#btn-login.connected ion-icon {
+  color: #2fa062;
+}
+
+
+/* ===== User Menu Sheet (Bottom Sheet) ===== */
+.user-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.26);
+  z-index: 1300;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+
+.user-menu {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1301;
+  background: rgba(255,255,255,.97);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  box-shadow: 0 -8px 30px rgba(0,0,0,.18);
+  transform: translateY(100%);
+  transition: transform .24s ease;
+  padding: 14px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  direction: rtl;
+}
+
+.user-menu.show {
+  transform: translateY(0);
+}
+
+.user-menu-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.user-menu.hidden,
+.user-menu-backdrop.hidden {
+  display: none;
+}
+
+.user-menu-title {
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+  color: #111;
+}
+
+.user-menu-email {
+  font-size: 14px;
+  text-align: center;
+  color: #555;
+  margin-bottom: 12px;
+  word-break: break-all;
+}
+
+.user-menu-actions {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.user-menu-btn {
+  appearance: none;
+  border-radius: 12px;
+  border: 0.5px solid rgba(0,0,0,.08);
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #f2f2f7;
+  color: #111;
+  text-align: center;
+  cursor: pointer;
+}
+
+.user-menu-btn:active {
+  opacity: .7;
+}
+
+.user-menu-btn-danger {
+  background: #fff5f3;
+  color: #DD694A;
+  border-color: rgba(221,105,74,.4);
+}
+
+.user-menu-btn[disabled] {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.user-menu-cancel {
+  width: 100%;
+  margin-top: 4px;
+  appearance: none;
+  border-radius: 12px;
+  border: 0.5px solid rgba(0,0,0,.12);
+  padding: 9px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #fff;
+  color: #007aff;
+  cursor: pointer;
 }
