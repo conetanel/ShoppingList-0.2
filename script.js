@@ -136,68 +136,91 @@ const userDisconnectBtn  = document.getElementById('user-disconnect-btn');
 function attachSheetDrag(sheetEl, backdropEl) {
   if (!sheetEl || !backdropEl) return;
 
-  const handle = sheetEl.querySelector('[data-sheet-handle]') || sheetEl;
+  // כל החלון הוא הידית
+  const handle = sheetEl;
 
+  let pointerDown = false;
+  let dragging = false;
   let startY = 0;
   let currentY = 0;
-  let dragging = false;
+  let dragStartDelta = 0; // כאן נשמור את ה"דלתא" הראשונה כדי למנוע קפיצה
 
-  const DRAG_CLOSE_THRESHOLD = 80;  // כמה למשוך למטה כדי לסגור
-  const MAX_PULL_UP = 20;          // כמה מותר למשוך למעלה לקפיצון
+  const DRAG_CLOSE_THRESHOLD = 80;   // כמה למשוך למטה כדי לסגור
+  const DRAG_START_THRESHOLD = 6;    // כמה לזוז עד שנבין שזה drag ולא tap
+
+  function applyTransform(delta) {
+    if (delta < 0) {
+      // גומי למעלה – עם דעיכה
+      const abs = Math.abs(delta);
+      const damped = -Math.pow(abs, 0.35) * 6; // אפשר לשחק עם 0.35 / 6
+      sheetEl.style.transform = `translateY(${damped}px)`;
+    } else {
+      // משיכה למטה 1:1
+      sheetEl.style.transform = `translateY(${delta}px)`;
+    }
+  }
 
   function onPointerDown(e) {
-    // בעכבר – רק כפתור שמאלי
     if (e.pointerType === 'mouse' && e.button !== 0) return;
 
-    dragging = true;
+    pointerDown = true;
+    dragging = false;
     startY = e.clientY;
     currentY = startY;
+    dragStartDelta = 0;
 
     sheetEl.style.transition = 'none';
 
     try {
       handle.setPointerCapture(e.pointerId);
     } catch (_) {}
-
-    // debug קטן – שתראה בקונסול שזה נתפס
-    // console.log('pointerdown on sheet handle', e.pointerType);
   }
 
   function onPointerMove(e) {
-    if (!dragging) return;
-
+    if (!pointerDown) return;
     currentY = e.clientY;
-    const delta = currentY - startY;
+    const rawDelta = currentY - startY;
 
-    // לא לתת לדפדפן “לגלול” / למשוך את הדף
+    if (!dragging) {
+      // עוד לא נכנסנו למצב גרירה – בודקים סף
+      if (Math.abs(rawDelta) < DRAG_START_THRESHOLD) return;
+      dragging = true;
+
+      // פה מתרחשת ה"קפיצה" בגרסה הישנה – אנחנו מונעים אותה:
+      dragStartDelta = rawDelta;             // זוכרים מאיפה התחלנו
+      sheetEl.style.transition = 'none';
+    }
+
     e.preventDefault();
 
-    if (delta < 0) {
-      // משיכה למעלה → קפיצון קל
-      const limited = Math.max(delta, -MAX_PULL_UP);
-      sheetEl.style.transform = `translateY(${limited}px)`;
-    } else {
-      // גרירה למטה
-      sheetEl.style.transform = `translateY(${delta}px)`;
-    }
+    const effectiveDelta = rawDelta - dragStartDelta;
+    applyTransform(effectiveDelta);
   }
 
   function onPointerUp(e) {
-    if (!dragging) return;
-    dragging = false;
-
-    sheetEl.style.transition = '';  // מחזיר את transition הרגיל מה-CSS
-    const delta = currentY - startY;
-
-    if (delta > DRAG_CLOSE_THRESHOLD) {
-      closeSheet();
-    } else {
-      sheetEl.style.transform = '';
-    }
+    if (!pointerDown) return;
+    pointerDown = false;
 
     try {
       handle.releasePointerCapture(e.pointerId);
     } catch (_) {}
+
+    if (!dragging) {
+      // Tap בלבד – לא זזנו
+      return;
+    }
+
+    dragging = false;
+    sheetEl.style.transition = 'transform .24s ease-out';
+
+    const rawDelta = currentY - startY;
+    const effectiveDelta = rawDelta - dragStartDelta;
+
+    if (effectiveDelta > DRAG_CLOSE_THRESHOLD) {
+      closeSheet();
+    } else {
+      sheetEl.style.transform = '';
+    }
   }
 
   function openSheet() {
@@ -205,15 +228,15 @@ function attachSheetDrag(sheetEl, backdropEl) {
     backdropEl.classList.remove('hidden');
 
     requestAnimationFrame(() => {
-      sheetEl.classList.add('show');
       backdropEl.classList.add('show');
+      sheetEl.classList.add('show');
       sheetEl.style.transform = '';
     });
   }
 
   function closeSheet() {
-    sheetEl.classList.remove('show');
     backdropEl.classList.remove('show');
+    sheetEl.classList.remove('show');
     sheetEl.style.transform = '';
 
     setTimeout(() => {
@@ -222,19 +245,19 @@ function attachSheetDrag(sheetEl, backdropEl) {
     }, 220);
   }
 
-  // חושפים API החוצה
   sheetEl.openSheet = openSheet;
   sheetEl.closeSheet = closeSheet;
 
-  // קליק על הרקע → סגירה
   backdropEl.addEventListener('click', closeSheet);
 
-  // Pointer Events במקום mouse/touch
   handle.addEventListener('pointerdown', onPointerDown);
   handle.addEventListener('pointermove', onPointerMove);
   handle.addEventListener('pointerup', onPointerUp);
   handle.addEventListener('pointercancel', onPointerUp);
 }
+
+
+
 
 
 
@@ -1043,6 +1066,7 @@ async function loadUserShoppingList(userId) {
       console.log("לא נמצאה רשימה שמורה למשתמש זה.");
       isLinkedToSharedList = false;
     }
+    updateUserMenuState();
   } catch (error) {
     console.error("שגיאה בקבלת נתונים:", error);
   }
@@ -1068,6 +1092,8 @@ onAuthStateChanged(auth, async (user) => {
     currentUserId = null;
     currentUserEmail = null;
     console.log("⚪ משתמש אורח");
+    isLinkedToSharedList = false;
+    updateUserMenuState();
 
     // --- החזרת האייקון למצב רגיל ---
     if (loginBtn) {
@@ -1111,16 +1137,25 @@ function resetShoppingList() {
 
 //////////פונקציה שמעדכנת את מצב כפתור "שבירת חיבור"//////
 function updateUserMenuState() {
-  if (!userDisconnectBtn) return;
+  if (!userMergeBtn || !userDisconnectBtn) return;
 
   if (isLinkedToSharedList) {
+    // יש groupId → מציגים "שבירת חיבור", מסתירים "איחוד"
     userDisconnectBtn.disabled = false;
     userDisconnectBtn.classList.remove('hidden');
+
+    userMergeBtn.disabled = true;
+    userMergeBtn.classList.add('hidden');
   } else {
+    // אין groupId → מציגים "איחוד רשימות", מסתירים "שבירת חיבור"
+    userMergeBtn.disabled = false;
+    userMergeBtn.classList.remove('hidden');
+
     userDisconnectBtn.disabled = true;
-    userDisconnectBtn.classList.add('hidden'); // או רק disabled אם אתה רוצה שיישאר גלוי אבל אפור
+    userDisconnectBtn.classList.add('hidden');
   }
 }
+
 
 /* ===== Bottom bar actions (skeletons) ===== */
 const loginBtn = document.getElementById('btn-login');
