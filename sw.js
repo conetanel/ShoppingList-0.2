@@ -1,5 +1,5 @@
 // sw.js
-const SW_VERSION = 'v1.1.4';            // ← תעדכן כדי לאלץ רענון
+const SW_VERSION = 'v1.1.5';            // ← תעדכן כדי לאלץ רענון
 const APP_SHELL  = 'app-shell-' + SW_VERSION;
 const RUNTIME    = 'runtime-'   + SW_VERSION;
 
