@@ -1258,7 +1258,7 @@ function ensureResetSheet() {
       <div class="reset-sheet-title">איפוס הרשימה</div>
       <div class="reset-actions">
         <button class="reset-btn warning" id="btn-reset-selected">
-          איפוס פריטים מסומנים
+          איפוס כל הפריטים המסומנים
         </button>
         <button class="reset-btn secondary" id="btn-reset-category" disabled>
           איפוס פריטים מסומנים בקטגוריה <span id="reset-cat-name">—</span>
