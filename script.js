@@ -142,100 +142,100 @@ function attachSheetDrag(sheetEl, backdropEl) {
   let currentY = 0;
   let dragging = false;
 
-  const DRAG_CLOSE_THRESHOLD = 80; // כמה למשוך למטה כדי לסגור
-  const MAX_PULL_UP = 24;          // כמה מותר "להרים" את השיט למעלה (קפיצון)
+  const DRAG_CLOSE_THRESHOLD = 80;  // כמה למשוך למטה כדי לסגור
+  const MAX_PULL_UP = 20;          // כמה מותר למשוך למעלה לקפיצון
 
-  const getY = (e) =>
-    e.touches && e.touches.length ? e.touches[0].clientY : e.clientY;
+  function onPointerDown(e) {
+    // בעכבר – רק כפתור שמאלי
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
 
-  function onStart(e) {
     dragging = true;
-    startY = getY(e);
+    startY = e.clientY;
     currentY = startY;
+
     sheetEl.style.transition = 'none';
+
+    try {
+      handle.setPointerCapture(e.pointerId);
+    } catch (_) {}
+
+    // debug קטן – שתראה בקונסול שזה נתפס
+    // console.log('pointerdown on sheet handle', e.pointerType);
   }
 
-  function onMove(e) {
+  function onPointerMove(e) {
     if (!dragging) return;
 
-    currentY = getY(e);
+    currentY = e.clientY;
     const delta = currentY - startY;
 
-    // אם מושכים קצת למעלה – נאפשר עד MAX_PULL_UP-
-    // אם מושכים למטה – אין הגבלה (עד הסגירה)
-    let translateY;
+    // לא לתת לדפדפן “לגלול” / למשוך את הדף
+    e.preventDefault();
+
     if (delta < 0) {
-      translateY = Math.max(delta, -MAX_PULL_UP); // למשל עד -24px
+      // משיכה למעלה → קפיצון קל
+      const limited = Math.max(delta, -MAX_PULL_UP);
+      sheetEl.style.transform = `translateY(${limited}px)`;
     } else {
-      translateY = delta;
-    }
-
-    sheetEl.style.transform = `translateY(${translateY}px)`;
-
-    // חשוב ל-iOS: למנוע scroll של העמוד
-    if (e.cancelable) {
-      e.preventDefault();
+      // גרירה למטה
+      sheetEl.style.transform = `translateY(${delta}px)`;
     }
   }
 
-  function onEnd() {
+  function onPointerUp(e) {
     if (!dragging) return;
     dragging = false;
 
-    sheetEl.style.transition = ''; // מחזירים אנימציה רגילה
-
+    sheetEl.style.transition = '';  // מחזיר את transition הרגיל מה-CSS
     const delta = currentY - startY;
 
     if (delta > DRAG_CLOSE_THRESHOLD) {
-      // משיכה טובה למטה → סגירה
       closeSheet();
     } else {
-      // כל שאר המצבים (כולל משיכה למעלה) → חזרה למצב 0
       sheetEl.style.transform = '';
     }
+
+    try {
+      handle.releasePointerCapture(e.pointerId);
+    } catch (_) {}
   }
 
   function openSheet() {
     sheetEl.classList.remove('hidden');
     backdropEl.classList.remove('hidden');
 
-    sheetEl.style.transition = '';
-    sheetEl.style.transform = 'translateY(100%)';
-
     requestAnimationFrame(() => {
       sheetEl.classList.add('show');
       backdropEl.classList.add('show');
-      sheetEl.style.transform = ''; // חוזר ל־0
+      sheetEl.style.transform = '';
     });
   }
 
   function closeSheet() {
     sheetEl.classList.remove('show');
     backdropEl.classList.remove('show');
+    sheetEl.style.transform = '';
 
-    // ה-CSS שלך כבר מגדיר translateY(100%) עבור המצב הסגור
     setTimeout(() => {
       sheetEl.classList.add('hidden');
       backdropEl.classList.add('hidden');
-      sheetEl.style.transform = '';
-    }, 240);
+    }, 220);
   }
 
+  // חושפים API החוצה
   sheetEl.openSheet = openSheet;
   sheetEl.closeSheet = closeSheet;
 
+  // קליק על הרקע → סגירה
   backdropEl.addEventListener('click', closeSheet);
 
-  // עכבר
-  handle.addEventListener('mousedown', onStart);
-  window.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', onEnd);
-
-  // טאץ' – חובה passive:false
-  handle.addEventListener('touchstart', onStart, { passive: false });
-  window.addEventListener('touchmove', onMove, { passive: false });
-  window.addEventListener('touchend', onEnd);
+  // Pointer Events במקום mouse/touch
+  handle.addEventListener('pointerdown', onPointerDown);
+  handle.addEventListener('pointermove', onPointerMove);
+  handle.addEventListener('pointerup', onPointerUp);
+  handle.addEventListener('pointercancel', onPointerUp);
 }
+
 
 
 function openUserMenu() {
@@ -1219,101 +1219,67 @@ if (authForm) {
 
 // יוצר את ה-Action Sheet פעם אחת
 function ensureResetSheet() {
-  let sheet    = document.getElementById('reset-sheet');
-  let backdrop = document.getElementById('reset-sheet-backdrop');
+  if (document.getElementById('reset-sheet')) return;
 
-  // אם כבר קיים sheet אבל עדיין לא אותחל לגרירה → נאתחל אותו
-  if (sheet && !sheet.dataset.initialized) {
-    if (!backdrop) {
-      backdrop = document.createElement('div');
-      backdrop.id = 'reset-sheet-backdrop';
-      document.body.appendChild(backdrop);
-    }
+  const sheet = document.createElement('div');
+  sheet.id = 'reset-sheet';
+  sheet.className = 'reset-sheet hidden';
+  sheet.innerHTML = `
+    <div class="sheet-handle" data-sheet-handle></div>
+    <div class="reset-sheet-title">איפוס הרשימה</div>
+    <div class="reset-actions">
+      <button class="reset-btn warning" id="btn-reset-selected">
+        איפוס פריטים מסומנים
+      </button>
+      <button class="reset-btn secondary" id="btn-reset-category" disabled>
+        איפוס פריטים מסומנים בקטגוריה <span id="reset-cat-name">—</span>
+      </button>
+    </div>
+  `;
 
-    attachSheetDrag(sheet, backdrop);
+  const backdrop = document.createElement('div');
+  backdrop.id = 'reset-sheet-backdrop';
+  backdrop.className = 'auth-backdrop hidden'; // או מחלקה דומה לרקע שקוף
 
-    backdrop.addEventListener('click', () => sheet.closeSheet());
+  document.body.appendChild(sheet);
+  document.body.appendChild(backdrop);
 
-    const btnSelected = document.getElementById('btn-reset-selected');
-    const btnCategory = document.getElementById('btn-reset-category');
-
-    if (btnSelected && !btnSelected.dataset.bound) {
-      btnSelected.dataset.bound = '1';
-      btnSelected.addEventListener('click', async () => {
-        const ok = confirm('אתה בטוח שתרצה לאפס את כל הפריטים המסומנים?');
-        if (!ok) return;
-        await resetSelectedItemsWithFX();
-        sheet.closeSheet();
-      });
-    }
-
-    if (btnCategory && !btnCategory.dataset.bound) {
-      btnCategory.dataset.bound = '1';
-      btnCategory.addEventListener('click', async () => {
-        if (!currentCategory || currentCategory === 'הכל') return;
-        await resetCategorySelectedWithFX(currentCategory);
-        sheet.closeSheet();
-      });
-    }
-
-    sheet.dataset.initialized = '1';
-    return;
-  }
-
-  // אם אין בכלל sheet – ניצור אחד דינמית
-  if (!sheet) {
-    sheet = document.createElement('div');
-    sheet.id = 'reset-sheet';
-    sheet.className = 'reset-sheet';
-    sheet.innerHTML = `
-      <div class="sheet-handle" data-sheet-handle></div>
-      <div class="reset-sheet-title">איפוס הרשימה</div>
-      <div class="reset-actions">
-        <button class="reset-btn warning" id="btn-reset-selected">
-          איפוס כל הפריטים המסומנים
-        </button>
-        <button class="reset-btn secondary" id="btn-reset-category" disabled>
-          איפוס פריטים מסומנים בקטגוריה <span id="reset-cat-name">—</span>
-        </button>
-      </div>
-    `;
-    document.body.appendChild(sheet);
-  }
-
-  if (!backdrop) {
-    backdrop = document.createElement('div');
-    backdrop.id = 'reset-sheet-backdrop';
-    document.body.appendChild(backdrop);
-  }
-
+  // מחברים דרג + open/close מהפונקציה למעלה
   attachSheetDrag(sheet, backdrop);
 
-  backdrop.addEventListener('click', () => sheet.closeSheet());
+  // כפתורי האיפוס
+  const btnResetSelected = sheet.querySelector('#btn-reset-selected');
+  const btnResetCategory = sheet.querySelector('#btn-reset-category');
+  const catNameSpan      = sheet.querySelector('#reset-cat-name');
 
-  const btnSelected = document.getElementById('btn-reset-selected');
-  const btnCategory = document.getElementById('btn-reset-category');
+  // איפוס מסומנים – עם confirm קטן
+  btnResetSelected.addEventListener('click', async () => {
+    const ok = confirm('אתה בטוח שתרצה לאפס את כל הפריטים המסומנים?');
+    if (!ok) return;
+    await resetSelectedItemsWithFX();
+    sheet.closeSheet();
+  });
 
-  if (btnSelected && !btnSelected.dataset.bound) {
-    btnSelected.dataset.bound = '1';
-    btnSelected.addEventListener('click', async () => {
-      const ok = confirm('אתה בטוח שתרצה לאפס את כל הפריטים המסומנים?');
-      if (!ok) return;
-      await resetSelectedItemsWithFX();
-      sheet.closeSheet();
-    });
-  }
+  // איפוס לפי קטגוריה נוכחית
+  btnResetCategory.addEventListener('click', async () => {
+    if (!currentCategory || currentCategory === 'הכל') return;
+    const ok = confirm(`לאפס פריטים מסומנים בקטגוריה "${currentCategory}"?`);
+    if (!ok) return;
+    await resetCategorySelectedWithFX(currentCategory);
+    sheet.closeSheet();
+  });
 
-  if (btnCategory && !btnCategory.dataset.bound) {
-    btnCategory.dataset.bound = '1';
-    btnCategory.addEventListener('click', async () => {
-      if (!currentCategory || currentCategory === 'הכל') return;
-      await resetCategorySelectedWithFX(currentCategory);
-      sheet.closeSheet();
-    });
-  }
+  // פונקציה קטנה שתעדכן את שם הקטגוריה ואת enabled/disabled
+  sheet.prepareForOpen = () => {
+    catNameSpan.textContent = currentCategory || '—';
+    const canResetCategory = currentCategory && currentCategory !== 'הכל';
+    btnResetCategory.disabled = !canResetCategory;
+    btnResetCategory.classList.toggle('disabled', !canResetCategory);
+  };
 
-  sheet.dataset.initialized = '1';
+  // נשמור רפרנס גלובלי אם תרצה, אבל לא חובה
 }
+
 
 
 
@@ -1321,25 +1287,13 @@ function ensureResetSheet() {
 // פותח את הדיאלוג
 // פותח את הדיאלוג
 function openResetSheet() {
-   console.log('✅ openResetSheet נלחץ');
   ensureResetSheet();
+  const sheet = document.getElementById('reset-sheet');
+  if (!sheet) return;
 
-  const sheet       = document.getElementById('reset-sheet');
-  const catBtn      = document.getElementById('btn-reset-category');
-  const catNameSpan = document.getElementById('reset-cat-name');
-
-  // לעדכן שם קטגוריה לפני פתיחה
-  if (catNameSpan) {
-    catNameSpan.textContent = currentCategory || 'הכל';
+  if (typeof sheet.prepareForOpen === 'function') {
+    sheet.prepareForOpen();
   }
-
-  const canResetCategory = (currentCategory && currentCategory !== 'הכל');
-  if (catBtn) {
-    catBtn.disabled = !canResetCategory;
-    catBtn.classList.toggle('disabled', !canResetCategory);
-  }
-
-  // משתמש בפונקציה שהוגדרה בתוך attachSheetDrag
   sheet.openSheet();
 }
 
