@@ -1163,6 +1163,11 @@ html {
   z-index: 1400;
 }
 
+.auth-sheet,
+.user-menu,
+.reset-sheet {
+  touch-action: none;
+}
 
 
 
