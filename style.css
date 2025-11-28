@@ -1130,6 +1130,38 @@ html {
   transform: translateY(0);
 }
 
+/* גם לתפריט משתמש וגם לריסט – אפשר להשתמש באותה מחלקה */
+.user-menu,
+.reset-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ffffff;
+  /* חשוב: שהרקע יהיה אחיד */
+}
+
+/* זנב שממשיך את החלונית מתחת לתחתית המסך */
+.user-menu::after,
+.reset-sheet::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -40px;   /* יותר גדול מ-MAX_PULL_UP ב־JS (למשל 24) */
+  height: 40px;
+  background: inherit;  /* אותו צבע רקע כמו החלונית */
+  pointer-events: none;
+}
+#reset-sheet-backdrop,
+.user-menu-backdrop {
+  z-index: 1399;
+}
+
+.reset-sheet,
+.user-menu {
+  z-index: 1400;
+}
 
 
 
