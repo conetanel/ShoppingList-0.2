@@ -48,6 +48,22 @@ googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
 
+async function loginWithGoogle() {
+  const standaloneIOS = isIOS() && isStandalone();
+
+  try {
+    if (standaloneIOS) {
+      // PWA על iOS → redirect
+      await signInWithRedirect(auth, googleProvider);
+    } else {
+      // כרום / דסקטופ / אנדרואיד → popup
+      await signInWithPopup(auth, googleProvider);
+    }
+  } catch (err) {
+    console.error('שגיאה בהתחברות Google:', err);
+    alert('שגיאה בהתחברות עם Google: ' + (err.code || '') + ' ' + (err.message || ''));
+  }
+}
 
 
 // מניעת גלילה אנכית כאשר מתמקדים בסרגל (מהקוד המקורי שלך)
@@ -109,6 +125,7 @@ function isStandalone() {
 // ===== User Menu Logic =====
 const userMenuBackdrop   = document.getElementById('user-menu-backdrop');
 const userMenuSheet      = document.getElementById('user-menu');
+attachSheetDrag(userMenuSheet, userMenuBackdrop);
 const userMenuEmailLabel = document.getElementById('user-menu-email');
 const userMenuCancelBtn  = document.getElementById('user-menu-cancel');
 const userLogoutBtn      = document.getElementById('user-logout-btn');
@@ -116,37 +133,114 @@ const userMergeBtn       = document.getElementById('user-merge-btn');
 const userDisconnectBtn  = document.getElementById('user-disconnect-btn');
 
 
+function attachSheetDrag(sheetEl, backdropEl) {
+  if (!sheetEl || !backdropEl) return;
+
+  const handle = sheetEl.querySelector('[data-sheet-handle]') || sheetEl;
+  let startY = 0;
+  let currentY = 0;
+  let dragging = false;
+
+  const DRAG_CLOSE_THRESHOLD = 80;   // כמה למשוך למטה כדי לסגור
+  const MAX_PULL_UP = 20;           // כמה מותר למשוך למעלה לקפיצון
+
+  const getY = (e) =>
+    e.touches && e.touches.length ? e.touches[0].clientY : e.clientY;
+
+  function onStart(e) {
+    dragging = true;
+    startY = getY(e);
+    currentY = startY;
+    sheetEl.style.transition = 'none';
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    currentY = getY(e);
+    const delta = currentY - startY;
+
+    if (delta < 0) {
+      // משיכה למעלה → קפיצון קטן
+      const limited = Math.max(delta, -MAX_PULL_UP);
+      sheetEl.style.transform = `translateY(${limited}px)`;
+    } else {
+      // גרירה למטה
+      sheetEl.style.transform = `translateY(${delta}px)`;
+    }
+  }
+
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    sheetEl.style.transition = '';
+
+    const delta = currentY - startY;
+
+    if (delta > DRAG_CLOSE_THRESHOLD) {
+      // סגירה
+      closeSheet();
+    } else {
+      // חזרה למקום + קפיצון קטן
+      sheetEl.style.transform = '';
+      sheetEl.classList.remove('bounce');
+      void sheetEl.offsetWidth; // טריק לרענן animation
+      sheetEl.classList.add('bounce');
+    }
+  }
+
+  function openSheet() {
+    sheetEl.classList.remove('hidden');
+    backdropEl.classList.remove('hidden');
+
+    requestAnimationFrame(() => {
+      sheetEl.classList.add('show');
+      backdropEl.classList.add('show');
+    });
+  }
+
+  function closeSheet() {
+    sheetEl.classList.remove('show');
+    backdropEl.classList.remove('show');
+    sheetEl.style.transform = '';
+
+    setTimeout(() => {
+      sheetEl.classList.add('hidden');
+      backdropEl.classList.add('hidden');
+    }, 220);
+  }
+
+  // נחשוף פונקציות לוגיקה החוצה
+  sheetEl.openSheet = openSheet;
+  sheetEl.closeSheet = closeSheet;
+
+  // קליקים על הרקע → סגירה
+  backdropEl.addEventListener('click', closeSheet);
+
+  // אירועי גרירה (עכבר + טאץ')
+  handle.addEventListener('mousedown', onStart);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onEnd);
+
+  handle.addEventListener('touchstart', onStart, { passive: true });
+  window.addEventListener('touchmove', onMove, { passive: false });
+  window.addEventListener('touchend', onEnd);
+}
 
 function openUserMenu() {
   if (!userMenuSheet || !userMenuBackdrop) return;
 
-  // עדכון הטקסט של המייל
   if (userMenuEmailLabel) {
     userMenuEmailLabel.textContent = currentUserEmail
       ? `מחובר כ־ ${currentUserEmail}`
       : 'לא מחובר';
   }
 
-  updateUserMenuState();
-  userMenuSheet.classList.remove('hidden');
-  userMenuBackdrop.classList.remove('hidden');
-
-  requestAnimationFrame(() => {
-    userMenuSheet.classList.add('show');
-    userMenuBackdrop.classList.add('show');
-  });
+  userMenuSheet.openSheet();  // משתמש בפונקציה מה-attachSheetDrag
 }
 
 function closeUserMenu() {
   if (!userMenuSheet || !userMenuBackdrop) return;
-
-  userMenuSheet.classList.remove('show');
-  userMenuBackdrop.classList.remove('show');
-
-  setTimeout(() => {
-    userMenuSheet.classList.add('hidden');
-    userMenuBackdrop.classList.add('hidden');
-  }, 240);
+  userMenuSheet.closeSheet();
 }
 
 if (userMenuCancelBtn) {
@@ -1020,29 +1114,18 @@ function updateUserMenuState() {
 const loginBtn = document.getElementById('btn-login');
 
 if (loginBtn) {
-  loginBtn.addEventListener('click', async () => {
-    // אם כבר מחובר – (אפשר במקום זה לפתוח user menu, אבל נשאיר לפי הלוגיקה שלך)
+  loginBtn.addEventListener('click', () => {
+    // אם יש משתמש מחובר → נפתח תפריט משתמש
     if (currentUserId) {
-      const ok = confirm('להתנתק מהמשתמש המחובר?');
-      if (!ok) return;
-      try {
-        await signOut(auth);
-      } catch (err) {
-        console.error('שגיאה בהתחברות Google:', err.code, err.message);
-        alert('שגיאה בהתחברות עם Google: ' + (err.code || '') + ' ' + (err.message || ''));
-      }
+      openUserMenu();   // פונקציה שכבר קיימת אצלך למעלה
       return;
     }
 
-    // תמיד popup – גם ב-iOS, גם ב-PWA
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (err) {
-      console.error('שגיאה בהתחברות Google:', err);
-      alert('שגיאה בהתחברות עם Google: ' + (err.code || '') + '\n' + (err.message || ''));
-    }
+    // לא מחובר → נתחיל התחברות עם גוגל
+    loginWithGoogle();
   });
 }
+
 
 
 
@@ -1051,7 +1134,17 @@ document.getElementById('btn-my-lists')?.addEventListener('click', () => {
   console.log('הרשימות שלי – נגדיר בהמשך');
 });
 
-document.getElementById('btn-reset')?.addEventListener('click', openResetSheet);
+document.addEventListener('DOMContentLoaded', () => {
+  const resetBtn = document.getElementById('btn-reset');
+
+  if (!resetBtn) {
+    console.warn('⚠️ לא נמצא btn-reset ב-DOM בזמן טעינת הסקריפט');
+  } else {
+    console.log('✅ נמצא btn-reset וה־listener חובר');
+    resetBtn.addEventListener('click', openResetSheet);
+  }
+});
+
 
 document.addEventListener('DOMContentLoaded', () => {
   const shareIconHeader = document.getElementById('share-icon');
@@ -1114,81 +1207,130 @@ if (authForm) {
 
 // יוצר את ה-Action Sheet פעם אחת
 function ensureResetSheet() {
-  if (document.getElementById('reset-sheet')) return;
+  let sheet    = document.getElementById('reset-sheet');
+  let backdrop = document.getElementById('reset-sheet-backdrop');
 
-  const sheet = document.createElement('div');
-  sheet.id = 'reset-sheet';
-  sheet.innerHTML = `
-    <div class="reset-sheet-title">איפוס הרשימה</div>
-    <div class="reset-actions">
-      <button class="reset-btn warning" id="btn-reset-selected">
-        איפוס פריטים מסומנים
-      </button>
+  // אם כבר קיים sheet אבל עדיין לא אותחל לגרירה → נאתחל אותו
+  if (sheet && !sheet.dataset.initialized) {
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.id = 'reset-sheet-backdrop';
+      document.body.appendChild(backdrop);
+    }
 
-      <button class="reset-btn secondary" id="btn-reset-category" disabled>
-        איפוס פריטים מסומנים בקטגוריה <span id="reset-cat-name">—</span>
-      </button>
+    attachSheetDrag(sheet, backdrop);
 
-      <button class="reset-btn reset-cancel" id="btn-reset-cancel">ביטול</button>
-    </div>
-  `;
+    backdrop.addEventListener('click', () => sheet.closeSheet());
 
-  const backdrop = document.createElement('div');
-  backdrop.id = 'reset-sheet-backdrop';
+    const btnSelected = document.getElementById('btn-reset-selected');
+    const btnCategory = document.getElementById('btn-reset-category');
 
-  document.body.appendChild(sheet);
-  document.body.appendChild(backdrop);
+    if (btnSelected && !btnSelected.dataset.bound) {
+      btnSelected.dataset.bound = '1';
+      btnSelected.addEventListener('click', async () => {
+        const ok = confirm('אתה בטוח שתרצה לאפס את כל הפריטים המסומנים?');
+        if (!ok) return;
+        await resetSelectedItemsWithFX();
+        sheet.closeSheet();
+      });
+    }
 
-  // פתיחה/סגירה (כבר היו קיימות אצלך – שומרים)
-  function closeSheet() {
-    sheet.classList.remove('open');
-    backdrop.classList.remove('open');
-    setTimeout(()=>{ backdrop.style.display='none'; }, 220);
+    if (btnCategory && !btnCategory.dataset.bound) {
+      btnCategory.dataset.bound = '1';
+      btnCategory.addEventListener('click', async () => {
+        if (!currentCategory || currentCategory === 'הכל') return;
+        await resetCategorySelectedWithFX(currentCategory);
+        sheet.closeSheet();
+      });
+    }
+
+    sheet.dataset.initialized = '1';
+    return;
   }
-  function openSheet() {
-    // עדכון מצב כפתור הקטגוריה בכל פתיחה
-    const catBtn = document.getElementById('btn-reset-category');
-    const catNameSpan = document.getElementById('reset-cat-name');
-    catNameSpan.textContent = currentCategory;
-    const canResetCategory = (currentCategory && currentCategory !== 'הכל');
-    catBtn.disabled = !canResetCategory;
-    catBtn.classList.toggle('disabled', !canResetCategory);
 
-    backdrop.style.display='block';
-    requestAnimationFrame(()=>{
-      sheet.classList.add('open');
-      backdrop.classList.add('open');
+  // אם אין בכלל sheet – ניצור אחד דינמית
+  if (!sheet) {
+    sheet = document.createElement('div');
+    sheet.id = 'reset-sheet';
+    sheet.className = 'reset-sheet';
+    sheet.innerHTML = `
+      <div class="sheet-handle" data-sheet-handle></div>
+      <div class="reset-sheet-title">איפוס הרשימה</div>
+      <div class="reset-actions">
+        <button class="reset-btn warning" id="btn-reset-selected">
+          איפוס פריטים מסומנים
+        </button>
+        <button class="reset-btn secondary" id="btn-reset-category" disabled>
+          איפוס פריטים מסומנים בקטגוריה <span id="reset-cat-name">—</span>
+        </button>
+      </div>
+    `;
+    document.body.appendChild(sheet);
+  }
+
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.id = 'reset-sheet-backdrop';
+    document.body.appendChild(backdrop);
+  }
+
+  attachSheetDrag(sheet, backdrop);
+
+  backdrop.addEventListener('click', () => sheet.closeSheet());
+
+  const btnSelected = document.getElementById('btn-reset-selected');
+  const btnCategory = document.getElementById('btn-reset-category');
+
+  if (btnSelected && !btnSelected.dataset.bound) {
+    btnSelected.dataset.bound = '1';
+    btnSelected.addEventListener('click', async () => {
+      const ok = confirm('אתה בטוח שתרצה לאפס את כל הפריטים המסומנים?');
+      if (!ok) return;
+      await resetSelectedItemsWithFX();
+      sheet.closeSheet();
     });
   }
 
-  sheet.openSheet = openSheet;
-  sheet.closeSheet = closeSheet;
+  if (btnCategory && !btnCategory.dataset.bound) {
+    btnCategory.dataset.bound = '1';
+    btnCategory.addEventListener('click', async () => {
+      if (!currentCategory || currentCategory === 'הכל') return;
+      await resetCategorySelectedWithFX(currentCategory);
+      sheet.closeSheet();
+    });
+  }
 
-  backdrop.addEventListener('click', closeSheet);
-  document.getElementById('btn-reset-cancel').addEventListener('click', closeSheet);
-
-  // איפוס מסומנים — עם אישור “אתה בטוח?”
-  document.getElementById('btn-reset-selected').addEventListener('click', async () => {
-    const ok = confirm('אתה בטוח שתרצה לאפס את כל הפריטים המסומנים?');
-    if (!ok) return;
-    await resetSelectedItemsWithFX();
-    closeSheet();
-  });
-
-  // איפוס מסומנים בקטגוריה הנוכחית
-  document.getElementById('btn-reset-category').addEventListener('click', async () => {
-    if (!currentCategory || currentCategory === 'הכל') return;
-    await resetCategorySelectedWithFX(currentCategory);
-    closeSheet();
-  });
+  sheet.dataset.initialized = '1';
 }
+
+
+
 
 // פותח את הדיאלוג
+// פותח את הדיאלוג
 function openResetSheet() {
+   console.log('✅ openResetSheet נלחץ');
   ensureResetSheet();
-  const sheet = document.getElementById('reset-sheet');
+
+  const sheet       = document.getElementById('reset-sheet');
+  const catBtn      = document.getElementById('btn-reset-category');
+  const catNameSpan = document.getElementById('reset-cat-name');
+
+  // לעדכן שם קטגוריה לפני פתיחה
+  if (catNameSpan) {
+    catNameSpan.textContent = currentCategory || 'הכל';
+  }
+
+  const canResetCategory = (currentCategory && currentCategory !== 'הכל');
+  if (catBtn) {
+    catBtn.disabled = !canResetCategory;
+    catBtn.classList.toggle('disabled', !canResetCategory);
+  }
+
+  // משתמש בפונקציה שהוגדרה בתוך attachSheetDrag
   sheet.openSheet();
 }
+
 
 
 // מחזיר Promise קטן עבור תזמון אנימציה
