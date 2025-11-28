@@ -137,12 +137,13 @@ function attachSheetDrag(sheetEl, backdropEl) {
   if (!sheetEl || !backdropEl) return;
 
   const handle = sheetEl.querySelector('[data-sheet-handle]') || sheetEl;
+
   let startY = 0;
   let currentY = 0;
   let dragging = false;
 
-  const DRAG_CLOSE_THRESHOLD = 80;   // כמה למשוך למטה כדי לסגור
-  const MAX_PULL_UP = 20;           // כמה מותר למשוך למעלה לקפיצון
+  const DRAG_CLOSE_THRESHOLD = 80; // כמה למשוך למטה כדי לסגור
+  const MAX_PULL_UP = 24;          // כמה מותר "להרים" את השיט למעלה (קפיצון)
 
   const getY = (e) =>
     e.touches && e.touches.length ? e.touches[0].clientY : e.clientY;
@@ -156,35 +157,41 @@ function attachSheetDrag(sheetEl, backdropEl) {
 
   function onMove(e) {
     if (!dragging) return;
+
     currentY = getY(e);
     const delta = currentY - startY;
 
+    // אם מושכים קצת למעלה – נאפשר עד MAX_PULL_UP-
+    // אם מושכים למטה – אין הגבלה (עד הסגירה)
+    let translateY;
     if (delta < 0) {
-      // משיכה למעלה → קפיצון קטן
-      const limited = Math.max(delta, -MAX_PULL_UP);
-      sheetEl.style.transform = `translateY(${limited}px)`;
+      translateY = Math.max(delta, -MAX_PULL_UP); // למשל עד -24px
     } else {
-      // גרירה למטה
-      sheetEl.style.transform = `translateY(${delta}px)`;
+      translateY = delta;
+    }
+
+    sheetEl.style.transform = `translateY(${translateY}px)`;
+
+    // חשוב ל-iOS: למנוע scroll של העמוד
+    if (e.cancelable) {
+      e.preventDefault();
     }
   }
 
   function onEnd() {
     if (!dragging) return;
     dragging = false;
-    sheetEl.style.transition = '';
+
+    sheetEl.style.transition = ''; // מחזירים אנימציה רגילה
 
     const delta = currentY - startY;
 
     if (delta > DRAG_CLOSE_THRESHOLD) {
-      // סגירה
+      // משיכה טובה למטה → סגירה
       closeSheet();
     } else {
-      // חזרה למקום + קפיצון קטן
+      // כל שאר המצבים (כולל משיכה למעלה) → חזרה למצב 0
       sheetEl.style.transform = '';
-      sheetEl.classList.remove('bounce');
-      void sheetEl.offsetWidth; // טריק לרענן animation
-      sheetEl.classList.add('bounce');
     }
   }
 
@@ -192,39 +199,44 @@ function attachSheetDrag(sheetEl, backdropEl) {
     sheetEl.classList.remove('hidden');
     backdropEl.classList.remove('hidden');
 
+    sheetEl.style.transition = '';
+    sheetEl.style.transform = 'translateY(100%)';
+
     requestAnimationFrame(() => {
       sheetEl.classList.add('show');
       backdropEl.classList.add('show');
+      sheetEl.style.transform = ''; // חוזר ל־0
     });
   }
 
   function closeSheet() {
     sheetEl.classList.remove('show');
     backdropEl.classList.remove('show');
-    sheetEl.style.transform = '';
 
+    // ה-CSS שלך כבר מגדיר translateY(100%) עבור המצב הסגור
     setTimeout(() => {
       sheetEl.classList.add('hidden');
       backdropEl.classList.add('hidden');
-    }, 220);
+      sheetEl.style.transform = '';
+    }, 240);
   }
 
-  // נחשוף פונקציות לוגיקה החוצה
   sheetEl.openSheet = openSheet;
   sheetEl.closeSheet = closeSheet;
 
-  // קליקים על הרקע → סגירה
   backdropEl.addEventListener('click', closeSheet);
 
-  // אירועי גרירה (עכבר + טאץ')
+  // עכבר
   handle.addEventListener('mousedown', onStart);
   window.addEventListener('mousemove', onMove);
   window.addEventListener('mouseup', onEnd);
 
-  handle.addEventListener('touchstart', onStart, { passive: true });
+  // טאץ' – חובה passive:false
+  handle.addEventListener('touchstart', onStart, { passive: false });
   window.addEventListener('touchmove', onMove, { passive: false });
   window.addEventListener('touchend', onEnd);
 }
+
 
 function openUserMenu() {
   if (!userMenuSheet || !userMenuBackdrop) return;
