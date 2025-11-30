@@ -67,19 +67,23 @@ googleProvider.setCustomParameters({
 });
 
 async function loginWithGoogle() {
-  const standaloneIOS = isIOS() && isStandalone();
-
   try {
-    if (standaloneIOS) {
-      // PWA על iOS → redirect
-      await signInWithRedirect(auth, googleProvider);
-    } else {
-      // כרום / דסקטופ / אנדרואיד → popup
-      await signInWithPopup(auth, googleProvider);
-    }
+    // קודם כל – מנסה popup *בכל מקום*, כולל PWA
+    await signInWithPopup(auth, googleProvider);
   } catch (err) {
-    console.error('שגיאה בהתחברות Google:', err);
-    alert('שגיאה בהתחברות עם Google: ' + (err.code || '') + ' ' + (err.message || ''));
+    console.error('שגיאת popup, שוקל fallback ל-redirect:', err);
+
+    // רק אם זה באמת מקרה של popup חסום – נעבור ל-redirect
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+      } catch (redirErr) {
+        console.error('שגיאה ב-redirect:', redirErr);
+        alert('שגיאה בהתחברות עם Google: ' + (redirErr.code || '') + ' ' + (redirErr.message || ''));
+      }
+    } else {
+      alert('שגיאה בהתחברות עם Google: ' + (err.code || '') + ' ' + (err.message || ''));
+    }
   }
 }
 
@@ -285,7 +289,9 @@ function openUserMenu() {
   if (userMenuEmailLabel) {
     userMenuEmailLabel.textContent = currentUserEmail
       ? `מחובר כ־ ${currentUserEmail}`
-      : 'לא מחובר';
+      : currentUserId
+        ? `מחובר (משתמש ללא אימייל, uid: ${currentUserId})`
+        : 'לא מחובר';
   }
 
   userMenuSheet.openSheet();  // משתמש בפונקציה מה-attachSheetDrag
@@ -1092,12 +1098,19 @@ async function loadUserShoppingList(userId) {
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
+    // תמיד יש uid – נשתמש בו כ־fallback
     currentUserId = user.uid;
-    currentUserEmail = user.email || null;
 
-    console.log("🔵 מחובר עם Google:", currentUserEmail);
+    // ננסה להביא אימייל גם מה-providerData
+    const providerEmail =
+      (user.providerData && user.providerData[0] && user.providerData[0].email) ||
+      null;
 
-    // --- שינוי האייקון למצב מחובר ---
+    currentUserEmail = user.email || providerEmail || null;
+
+    console.log("🔵 onAuthStateChanged user:", user);
+    console.log("🔵 מחובר, uid:", currentUserId, "email:", currentUserEmail);
+
     if (loginBtn) {
       loginBtn.classList.add("connected");
       const icon = loginBtn.querySelector("ion-icon");
@@ -1113,7 +1126,6 @@ onAuthStateChanged(auth, async (user) => {
     isLinkedToSharedList = false;
     updateUserMenuState();
 
-    // --- החזרת האייקון למצב רגיל ---
     if (loginBtn) {
       loginBtn.classList.remove("connected");
       const icon = loginBtn.querySelector("ion-icon");
@@ -1121,6 +1133,7 @@ onAuthStateChanged(auth, async (user) => {
     }
   }
 });
+
 
 
 
