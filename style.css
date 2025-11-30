@@ -1153,7 +1153,208 @@ html {
   touch-action: none;
 }
 
+/* ===== Bottom Sheets: Reset + User Menu – iOS sizing ===== */
 
+/* חלון עצמו – יותר נוכחות לגובה */
+.reset-sheet,
+.user-menu {
+  border-radius: 24px 24px 0 0;
+  max-height: 88vh;
+  min-height: 40vh; /* שתמיד ייראה כמו חלון אמיתי */
+  padding: 18px 20px calc(32px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
 
+/* כותרות */
+.reset-sheet-title,
+.user-menu-title {
+  font-size: 19px;
+  font-weight: 700;
+  text-align: center;
+  margin: 10px 0 20px;
+}
 
+/* סט כפתורים בריסט */
+.reset-actions {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0 10px;
+}
 
+/* כפתורי פעולה – גדולים יותר, סטייל iOS */
+.reset-btn,
+.user-menu-btn {
+  appearance: none;
+  border-radius: 14px;
+  border: 0.5px solid rgba(0,0,0,.06);
+  padding: 13px 16px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* הכפתור “איפוס פריטים מסומנים” – אדום כתום */
+.reset-btn.warning {
+  background: var(--danger-red);
+  color: #fff;
+  border-color: rgba(0,0,0,0.05);
+}
+
+/* כפתור משני (אפור) */
+.reset-btn.secondary {
+  background: #f2f2f7;
+  color: #111;
+}
+
+/* אם אתה משתמש ב-reset-cancel – תן לו מרחק יפה מההום־בר */
+.reset-cancel {
+  margin-top: 12px;
+  padding: 11px 14px;
+  font-size: 16px;
+}
+
+/* גוף תפריט המשתמש – נשימה יפה מהתחתית */
+.user-menu-actions {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px; /* שלא ייגמר על ההום־בר */
+}
+
+/* כפתור “שבירת חיבור” נשאר מסוכן אבל עם גדלים חדשים */
+.user-menu-btn-danger {
+  background: #fff5f3;
+  color: var(--danger-red);
+  border-color: rgba(221,105,74,.4);
+}
+
+/* כפתור ההתנתקות – באותו אדום-כתום של ריסט */
+#user-logout-btn {
+  background: var(--danger-red);
+  color: #fff;
+  border-color: rgba(0,0,0,0.05);
+}
+
+/* כפתור הביטול בתפריט משתמש – כמו iOS */
+.user-menu-cancel {
+  border-radius: 14px;
+  padding: 11px 14px;
+  font-size: 16px;
+}
+
+/* ===== Auth Sheet – iOS style sizing ===== */
+
+.auth-sheet {
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  max-height: 90vh;
+  min-height: 42vh;
+  padding: 22px 22px calc(34px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+/* כותרת */
+.auth-title {
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  margin: 6px 0 20px;
+}
+
+/* תוויות + שדות */
+.auth-label {
+  font-size: 15px;
+  font-weight: 500;
+  gap: 6px;
+}
+
+.auth-label input {
+  font-size: 16px;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+/* כפתורי פעולה – כמו כפתורי iOS גדולים */
+.auth-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.auth-primary-btn,
+.auth-secondary-btn {
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 16px;
+}
+
+/* כפתור ביטול – גם טיפה גדל ויש מרווח מהתחתית */
+.auth-cancel-btn {
+  margin-top: 12px;
+  width: 100%;
+  border-radius: 14px;
+  padding: 11px 14px;
+  font-size: 16px;
+}
+
+/* סטטוס – לא יושב על הקצה של המסך */
+.auth-status {
+  margin-top: 10px;
+  min-height: 20px;
+  font-size: 14px;
+}
+
+/* ===== ידית + כותרת – ריווח נעים ===== */
+
+.reset-sheet .sheet-handle,
+.user-menu .sheet-handle {
+  margin-top: 8px;
+  margin-bottom: 16px;  /* היה 10 בערך – עכשיו יותר אוויר לפני הכותרת */
+}
+
+.auth-sheet .auth-title {
+  margin-top: 4px;
+  margin-bottom: 18px;
+}
+
+/* ===== סידור תוכן אנכי – שלא ירגיש ריק ===== */
+
+/* הסדינים מסודרים בטור, עם gap קבוע בין בלוקים */
+.reset-sheet,
+.user-menu,
+.auth-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;          /* ריווח קבוע בין כותרת / טקסט / כפתורים */
+}
+
+/* בתוך reset-sheet: כותרת + (אופציונלי) תת־כותרת + כפתורים */
+.reset-sheet-title {
+  margin-bottom: 4px;   /* נשען על ה-gap הכללי */
+}
+
+/* אזור הכפתורים – קצת מרווח מלמעלה ולמטה */
+.reset-actions {
+  margin-top: 6px;
+  margin-bottom: 12px;
+}
+
+/* תפריט משתמש – שלא יידבק לתחתית */
+.user-menu-actions {
+  margin-top: 10px;
+  margin-bottom: 22px;
+}
+
+/* auth – שהכפתורים לא יהיו צמודים מדי לשדה האחרון */
+.auth-actions {
+  margin-top: 14px;
+}
+
+/* תת כותרת קטנה לסדינים */
+.sheet-subtitle {
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  color: #6e6e73;
+  margin: 0;         /* ה-gap של הקונטיינר כבר נותן ריווח */
+  padding: 0 6px;
+}
