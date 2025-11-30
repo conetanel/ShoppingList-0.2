@@ -1293,6 +1293,9 @@ function ensureResetSheet() {
   sheet.innerHTML = `
     <div class="sheet-handle" data-sheet-handle></div>
     <div class="reset-sheet-title">איפוס הרשימה</div>
+    <p class="sheet-subtitle">
+      בחר האם לאפס הכל או רק את הקטגוריה הנוכחית.
+    </p>
     <div class="reset-actions">
       <button class="reset-btn warning" id="btn-reset-selected">
         איפוס פריטים מסומנים
@@ -1302,6 +1305,7 @@ function ensureResetSheet() {
       </button>
     </div>
   `;
+
 
   const backdrop = document.createElement('div');
   backdrop.id = 'reset-sheet-backdrop';
