@@ -7,18 +7,15 @@ body {
     overflow-x: hidden;
     touch-action: pan-y;
 }
-
-/* הגדרת גלילה על ה-body עצמו */
-/*html, body {
-  height: 100%;
-  overflow: hidden;             
-  overscroll-behavior-y: none;   
-}*/
-
+/* הגוף לא גולל; חוסמים overscroll chaining */
 html, body {
   height: 100%;
-  overflow: hidden;        /* ← הבעיה כאן */
+  margin: 0;
+  padding: 0;
+  overflow: hidden;                 /* ← חשוב */
+  overscroll-behavior-y: none;      /* כרום/אנדרואיד */
 }
+
 /* New: Container for the sticky header and filter bar */
 #sticky-header-container{
   position: relative;              /* לא sticky */
@@ -480,12 +477,7 @@ html, body {
 .category-bubble .category-text{
   text-shadow: 0 1px 1px rgba(0,0,0,.15);
 }
-/* הגוף לא גולל; חוסמים overscroll chaining */
-html, body {
-  height: 100%;
-  overflow: hidden;                 /* ← חשוב */
-  overscroll-behavior-y: none;      /* כרום/אנדרואיד */
-}
+
 
 
 /* אזור גלילה יחיד לתוכן מתחת לסטיקי */
@@ -548,12 +540,6 @@ html {
 
 /* שמור על ה-padding הקיים ל-safe area אצלך בהאדר */
 .header { padding-top: calc(20px + env(safe-area-inset-top)); }
-
-
-ש
-
-
-
 
 /* ====== גובה מסך מלא תקין לכל דפדפנים ====== */
 #app-wrapper {
@@ -824,15 +810,13 @@ html {
   background-color: #97CFB0;
 
   /* שים לב ל־; בסוף השורה ↓↓↓ */
-  background-image: url("./icons/splash/splash.svg");
+  background-image: url("/icons/splash/splash.svg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   opacity: 1;
   pointer-events: none;
   transition: opacity 0.35s ease;
