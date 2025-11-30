@@ -8,6 +8,7 @@ import {
   signInWithRedirect,
   GoogleAuthProvider,
   signOut
+  getRedirectResult, 
 } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
 
 import {
@@ -35,6 +36,21 @@ const firebaseConfig = {
 // אתחול Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+  // מנסה "לסגור" התחברות redirect (חשוב במיוחד ב-PWA על iOS)
+  (async () => {
+    try {
+      const result = await getRedirectResult(auth);
+      if (result && result.user) {
+        console.log('✅ Google redirect login OK, user:', result.user.email);
+        // כאן לא חייב לעשות כלום – onAuthStateChanged כבר יטפל בשאר
+        // אבל אם תרצה, אפשר לשמור גם currentUserId וכו' ידנית
+      } else {
+        console.log('ℹ️ אין redirectResult (זה תקין אם לא חזרנו כרגע מהתחברות)');
+      }
+    } catch (err) {
+      console.error('❌ שגיאה ב-getRedirectResult:', err.code, err.message);
+    }
+  })();
 const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager()
