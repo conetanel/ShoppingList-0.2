@@ -190,13 +190,26 @@
   </nav>
   </div>
 
-
 <!-- ===== Auth Sheet (Login / Signup) ===== -->
 <div id="auth-backdrop" class="auth-backdrop hidden"></div>
 <div id="auth-sheet" class="auth-sheet hidden" aria-hidden="true">
-  <div class="auth-title">התחברות לרשימת הקניות</div>
+  <!-- ידית (שגם נראית וגם רומזת שאפשר לגרור) -->
+  <div class="sheet-handle" data-sheet-handle></div>
 
-  <form id="auth-form" class="auth-form">
+  <div class="auth-title">התחברות</div>
+
+  <p class="sheet-subtitle">
+    על מנת לאחד רשימות ולגשת לרשימות שמורות<br>
+    עליך להתחבר באמצעות חשבון Google.
+  </p>
+
+  <button type="button" class="auth-primary-btn google-auth-btn" id="auth-google-btn">
+    <ion-icon name="logo-google" class="google-icon" aria-hidden="true"></ion-icon>
+    <span>התחברות עם Google</span>
+  </button>
+
+  <!-- אם תרצה להשאיר בעתיד התחברות במייל/סיסמה – אפשר להשאיר את הטופס מתחת, כרגע הוא פחות קריטי -->
+  <form id="auth-form" class="auth-form hidden">
     <label class="auth-label">
       כתובת אימייל
       <input type="email" id="auth-email" required autocomplete="email" />
@@ -217,21 +230,28 @@
     </div>
   </form>
 
-  <button type="button" class="auth-cancel-btn" id="auth-cancel">ביטול</button>
+
 
   <div class="auth-status" id="auth-status" aria-live="polite"></div>
 </div>
 
+
 <!-- ===== User Menu Sheet ===== -->
 <div id="user-menu-backdrop" class="user-menu-backdrop hidden"></div>
 
-<div id="user-menu" class="user-menu hidden" role="dialog" aria-modal="true" aria-labelledby="user-menu-title">
-   <!-- ✅ ידית גרירה -->
+<div
+  id="user-menu"
+  class="user-menu hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="user-menu-title"
+>
   <div class="sheet-handle" data-sheet-handle></div>
 
   <div class="user-menu-title" id="user-menu-title">
     פרטי משתמש
   </div>
+
 
   <div class="user-menu-email" id="user-menu-email">
     לא מחובר
@@ -239,19 +259,113 @@
 
   <div class="user-menu-actions">
     <button type="button" class="user-menu-btn" id="user-merge-btn">
-       איחוד רשימות 
+      איחוד רשימות
     </button>
 
-    <button type="button" class="user-menu-btn user-menu-btn-danger" id="user-disconnect-btn" disabled>
+    <button
+      type="button"
+      class="user-menu-btn user-menu-btn-danger"
+      id="user-disconnect-btn"
+      disabled
+    >
       🔗 שבירת חיבור מרשימה משותפת
     </button>
 
     <button type="button" class="user-menu-btn" id="user-logout-btn">
-       התנתקות
+      התנתקות
+    </button>
+  </div>
+
+  
+</div>
+
+<!-- ===== Reset Sheet (איפוס רשימה) ===== -->
+<div id="reset-sheet-backdrop" class="auth-backdrop hidden"></div>
+
+<div
+  id="reset-sheet"
+  class="reset-sheet hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="reset-sheet-title"
+>
+  <div class="sheet-handle" data-sheet-handle></div>
+
+  <div class="reset-sheet-title" id="reset-sheet-title">
+    איפוס הרשימה
+  </div>
+
+  <p class="sheet-subtitle">
+    בחר האם לאפס הכל או רק את הקטגוריה הנוכחית.
+  </p>
+
+  <div class="reset-actions">
+    <button class="reset-btn warning" id="btn-reset-selected">
+      איפוס פריטים מסומנים
+    </button>
+
+    <button class="reset-btn secondary" id="btn-reset-category" disabled>
+      איפוס פריטים מסומנים בקטגוריה
+      <span id="reset-cat-name">—</span>
     </button>
   </div>
 
 </div>
+
+<!-- ===== Saved Lists Sheet (רשימות שמורות) ===== -->
+<div id="lists-sheet-backdrop" class="auth-backdrop hidden"></div>
+
+<div
+  id="lists-sheet"
+  class="lists-sheet hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="lists-sheet-title"
+>
+  <!-- ידית גרירה -->
+  <div class="sheet-handle" data-sheet-handle></div>
+
+  <!-- כותרת + טקסט + כפתור הוסף רשימה (אזור סטיקי בתוך הכרטיסייה) -->
+  <div class="lists-header">
+    <div class="lists-sheet-title" id="lists-sheet-title">
+      רשימות שמורות
+    </div>
+
+    <p class="sheet-subtitle">
+      לחץ על "הוסף רשימה" כדי לשמור רשימות שבשימוש תדיר.
+    </p>
+
+    <button
+      type="button"
+      class="primary-action-btn"
+      id="lists-add-btn"
+    >
+      <ion-icon name="add-outline" aria-hidden="true"></ion-icon>
+      <span>הוסף רשימה</span>
+    </button>
+  </div>
+
+  <!-- אזור נגלל של הרשימות -->
+  <div class="lists-scroll-area">
+    <ul class="lists-list" id="saved-lists-list" aria-label="רשימות שמורות">
+      <!-- כאן בעתיד נוסיף <li> דינמיים לכל רשימה -->
+      <!-- דוגמה סטטית (תמחק כשנעבור ללוגיקה אמיתית):
+      <li class="saved-list-item saved-list-current">
+        <button type="button" class="saved-list-row">
+          <span class="saved-list-name">רשימת שבת רגילה</span>
+          <ion-icon
+            name="checkmark"
+            class="saved-list-current-icon"
+            aria-hidden="true"
+          ></ion-icon>
+        </button>
+      </li>
+      -->
+    </ul>
+  </div>
+</div>
+
+
 
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
