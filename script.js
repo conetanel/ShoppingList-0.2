@@ -86,6 +86,12 @@ async function loginWithGoogle() {
     }
   }
 }
+const authGoogleBtn = document.getElementById('auth-google-btn');
+if (authGoogleBtn) {
+  authGoogleBtn.addEventListener('click', () => {
+    loginWithGoogle();
+  });
+}
 
 
 // מניעת גלילה אנכית כאשר מתמקדים בסרגל (מהקוד המקורי שלך)
@@ -149,7 +155,7 @@ const userMenuBackdrop   = document.getElementById('user-menu-backdrop');
 const userMenuSheet      = document.getElementById('user-menu');
 attachSheetDrag(userMenuSheet, userMenuBackdrop);
 const userMenuEmailLabel = document.getElementById('user-menu-email');
-const userMenuCancelBtn  = document.getElementById('user-menu-cancel');
+
 const userLogoutBtn      = document.getElementById('user-logout-btn');
 const userMergeBtn       = document.getElementById('user-merge-btn');
 const userDisconnectBtn  = document.getElementById('user-disconnect-btn');
@@ -158,32 +164,35 @@ const userDisconnectBtn  = document.getElementById('user-disconnect-btn');
 function attachSheetDrag(sheetEl, backdropEl) {
   if (!sheetEl || !backdropEl) return;
 
-  // כל החלון הוא הידית
+  // כל הכרטיסיה היא "ידית"
   const handle = sheetEl;
 
   let pointerDown = false;
   let dragging = false;
   let startY = 0;
   let currentY = 0;
-  let dragStartDelta = 0; // כאן נשמור את ה"דלתא" הראשונה כדי למנוע קפיצה
+  let dragStartDelta = 0;
 
-  const DRAG_CLOSE_THRESHOLD = 80;   // כמה למשוך למטה כדי לסגור
-  const DRAG_START_THRESHOLD = 6;    // כמה לזוז עד שנבין שזה drag ולא tap
+  const DRAG_CLOSE_THRESHOLD = 80; // כמה למשוך למטה כדי לסגור
+  const DRAG_START_THRESHOLD = 6;  // כמה לזוז עד שמבינים שזה drag
 
   function applyTransform(delta) {
     if (delta < 0) {
-      // גומי למעלה – עם דעיכה
+      // משיכה למעלה – גומי
       const abs = Math.abs(delta);
-      const damped = -Math.pow(abs, 0.35) * 6; // אפשר לשחק עם 0.35 / 6
+      const damped = -Math.pow(abs, 0.35) * 6;
       sheetEl.style.transform = `translateY(${damped}px)`;
     } else {
-      // משיכה למטה 1:1
+      // משיכה למטה – 1:1
       sheetEl.style.transform = `translateY(${delta}px)`;
     }
   }
 
   function onPointerDown(e) {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+    // לא מתחילים גרירה מתוך כפתור / אינפוט / לינק
+    if (e.target.closest('button, input, textarea, select, a')) return;
 
     pointerDown = true;
     dragging = false;
@@ -200,16 +209,14 @@ function attachSheetDrag(sheetEl, backdropEl) {
 
   function onPointerMove(e) {
     if (!pointerDown) return;
+
     currentY = e.clientY;
     const rawDelta = currentY - startY;
 
     if (!dragging) {
-      // עוד לא נכנסנו למצב גרירה – בודקים סף
       if (Math.abs(rawDelta) < DRAG_START_THRESHOLD) return;
       dragging = true;
-
-      // פה מתרחשת ה"קפיצה" בגרסה הישנה – אנחנו מונעים אותה:
-      dragStartDelta = rawDelta;             // זוכרים מאיפה התחלנו
+      dragStartDelta = rawDelta;
       sheetEl.style.transition = 'none';
     }
 
@@ -228,7 +235,7 @@ function attachSheetDrag(sheetEl, backdropEl) {
     } catch (_) {}
 
     if (!dragging) {
-      // Tap בלבד – לא זזנו
+      // רק טאפ קצר – לא גרירה
       return;
     }
 
@@ -283,8 +290,11 @@ function attachSheetDrag(sheetEl, backdropEl) {
 
 
 
+
 function openUserMenu() {
   if (!userMenuSheet || !userMenuBackdrop) return;
+
+  updateUserMenuState();  // ← לוודא את מצב הכפתורים
 
   if (userMenuEmailLabel) {
     userMenuEmailLabel.textContent = currentUserEmail
@@ -294,17 +304,16 @@ function openUserMenu() {
         : 'לא מחובר';
   }
 
-  userMenuSheet.openSheet();  // משתמש בפונקציה מה-attachSheetDrag
+  userMenuSheet.openSheet();
 }
+
 
 function closeUserMenu() {
   if (!userMenuSheet || !userMenuBackdrop) return;
   userMenuSheet.closeSheet();
 }
 
-if (userMenuCancelBtn) {
-  userMenuCancelBtn.addEventListener('click', closeUserMenu);
-}
+
 if (userMenuBackdrop) {
   userMenuBackdrop.addEventListener('click', closeUserMenu);
 }
@@ -356,6 +365,7 @@ function setStickyHeight() {
 // ===== Auth Sheet Logic =====
 const authBackdrop   = document.getElementById('auth-backdrop');
 const authSheet      = document.getElementById('auth-sheet');
+attachSheetDrag(authSheet, authBackdrop);
 const authForm       = document.getElementById('auth-form');
 const authEmailInput = document.getElementById('auth-email');
 const authPassInput  = document.getElementById('auth-password');
@@ -367,32 +377,26 @@ const authSubmitBtn  = document.getElementById('auth-submit-btn');
 let authMode = 'login'; // 'login' או 'signup'
 
 function openAuthSheet() {
-  if (!authSheet || !authBackdrop) return;
-  authSheet.classList.remove('hidden');
-  authBackdrop.classList.remove('hidden');
-  // קצת delay כדי שהאנימציה תעבוד יפה
-  requestAnimationFrame(() => {
-    authSheet.classList.add('show');
-    authBackdrop.classList.add('show');
-  });
-  authStatus.textContent = '';
-  authStatus.className = 'auth-status';
+  if (authSheet && typeof authSheet.openSheet === 'function') {
+    authSheet.openSheet();
+  }
+  if (authStatus) {
+    authStatus.textContent = '';
+    authStatus.className = 'auth-status';
+  }
 }
 
 function closeAuthSheet() {
-  if (!authSheet || !authBackdrop) return;
-  authSheet.classList.remove('show');
-  authBackdrop.classList.remove('show');
-  setTimeout(() => {
-    authSheet.classList.add('hidden');
-    authBackdrop.classList.add('hidden');
-  }, 240);
+  if (authSheet && typeof authSheet.closeSheet === 'function') {
+    authSheet.closeSheet();
+  }
 }
 
-if (authCancelBtn && authBackdrop) {
+
+if (authCancelBtn) {
   authCancelBtn.addEventListener('click', closeAuthSheet);
-  authBackdrop.addEventListener('click', closeAuthSheet);
 }
+// ה־backdrop כבר מקבל click בתוך attachSheetDrag
 
 function setAuthMode(mode) {
   authMode = mode;
@@ -590,6 +594,7 @@ function filterListByCategory(categoryName) {
   if (activeBubble) {
     activeBubble.classList.add("active");
 
+
     // סנאפ לבועה
     const containerWidth = categoryFilterWrapper.parentElement.offsetWidth;
     const bubbleWidth = activeBubble.offsetWidth;
@@ -600,6 +605,13 @@ function filterListByCategory(categoryName) {
     // 🎨 צבעים
     const baseColor = window.getComputedStyle(activeBubble).backgroundColor;
     const lightenedColor = lightenColor(baseColor, 0.5);
+    const computedStyle = window.getComputedStyle(activeBubble);
+    const rawBg = computedStyle.backgroundColor;
+    const rawText = computedStyle.color;
+
+    // 👇 צבעי כפתור מקוריים מהבועה
+    document.documentElement.style.setProperty("--primary-btn-bg", rawBg);
+    document.documentElement.style.setProperty("--primary-btn-text", rawText);
 
     // אזור הנוץ' + צבע ההדר
     document.documentElement.style.setProperty("--status-bg", lightenedColor);
@@ -1098,41 +1110,44 @@ async function loadUserShoppingList(userId) {
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    // תמיד יש uid – נשתמש בו כ־fallback
     currentUserId = user.uid;
 
-    // ננסה להביא אימייל גם מה-providerData
-    const providerEmail =
-      (user.providerData && user.providerData[0] && user.providerData[0].email) ||
-      null;
-
-    currentUserEmail = user.email || providerEmail || null;
+    const provider = (user.providerData && user.providerData[0]) || null;
+    const providerEmail = provider?.email || null;
+    const providerName  = provider?.displayName || null;
+    const displayName   = user.displayName || providerName || null;
+    const sheet = document.getElementById('auth-sheet');
+    const backdrop = document.getElementById('auth-backdrop');
+    currentUserEmail = user.email || providerEmail || displayName || null;
 
     console.log("🔵 onAuthStateChanged user:", user);
     console.log("🔵 מחובר, uid:", currentUserId, "email:", currentUserEmail);
 
-    if (loginBtn) {
-      loginBtn.classList.add("connected");
-      const icon = loginBtn.querySelector("ion-icon");
-      if (icon) icon.setAttribute("name", "person"); // אייקון מלא
-    }
+     if (sheet && backdrop) {
+      sheet.classList.remove('show');
+      backdrop.classList.remove('show');
+      sheet.classList.add('hidden');
+      backdrop.classList.add('hidden');
+      sheet.setAttribute('aria-hidden', 'true');
+    } 
 
+    // טוען רשימה וסטטוס groupId
     await loadUserShoppingList(currentUserId);
-
   } else {
-    currentUserId = null;
-    currentUserEmail = null;
-    console.log("⚪ משתמש אורח");
-    isLinkedToSharedList = false;
-    updateUserMenuState();
+    console.log("🔴 לא מחובר");
 
-    if (loginBtn) {
-      loginBtn.classList.remove("connected");
-      const icon = loginBtn.querySelector("ion-icon");
-      if (icon) icon.setAttribute("name", "person-outline");
-    }
+    currentUserId     = null;
+    currentUserEmail  = null;
+    isLinkedToSharedList = false;
+
+    shoppingList = {};
+    saveShoppingCache(shoppingList);
   }
+
+  updateLoginButtonUI();
+  updateUserMenuState();
 });
+
 
 
 
@@ -1190,20 +1205,31 @@ function updateUserMenuState() {
 
 /* ===== Bottom bar actions (skeletons) ===== */
 const loginBtn = document.getElementById('btn-login');
+const loginIcon = loginBtn?.querySelector('ion-icon');
+
+function updateLoginButtonUI() {
+  if (!loginBtn || !loginIcon) return;
+
+  if (currentUserId) {
+    // מחובר → אייקון עגול + ירוק
+    loginBtn.classList.add('connected');
+    loginIcon.setAttribute('name', 'person');
+  } else {
+    // לא מחובר → אייקון רגיל + אפור
+    loginBtn.classList.remove('connected');
+    loginIcon.setAttribute('name', 'person-outline');
+  }
+}
 
 if (loginBtn) {
   loginBtn.addEventListener('click', () => {
-    // אם יש משתמש מחובר → נפתח תפריט משתמש
     if (currentUserId) {
-      openUserMenu();   // פונקציה שכבר קיימת אצלך למעלה
-      return;
+      openUserMenu();
+    } else {
+      openAuthSheet();
     }
-
-    // לא מחובר → נתחיל התחברות עם גוגל
-    loginWithGoogle();
   });
 }
-
 
 
 
@@ -1279,50 +1305,71 @@ if (authForm) {
 }
 
 ///////////////
-/* לוגיקת דיאלוג אישור איפוס*/
+// ===== Saved Lists Sheet (רשימות שמורות) =====
+const listsSheet     = document.getElementById('lists-sheet');
+const listsBackdrop  = document.getElementById('lists-sheet-backdrop');
+const listsAddBtn    = document.getElementById('lists-add-btn');
+const savedListsList = document.getElementById('saved-lists-list');
 
-/** ---------- RESET: action sheet + logic ---------- **/
+if (listsSheet && listsBackdrop) {
+  attachSheetDrag(listsSheet, listsBackdrop);
 
-// יוצר את ה-Action Sheet פעם אחת
+  // פתיחה
+  function openListsSheet() {
+    listsSheet.openSheet();
+  }
+
+  // סגירה (אם תרצה להשתמש בהמשך)
+  function closeListsSheet() {
+    listsSheet.closeSheet();
+  }
+
+  // חיבור לכפתור בסרגל התחתון
+  const myListsBtn = document.getElementById('btn-my-lists');
+  if (myListsBtn) {
+    myListsBtn.addEventListener('click', () => {
+      openListsSheet();
+    });
+  }
+
+  // כרגע – כפתור "הוסף רשימה" רק כ־placeholder
+  if (listsAddBtn) {
+    listsAddBtn.addEventListener('click', () => {
+      console.log('TODO: הוספת רשימה חדשה – נממש בשלב הבא');
+      // כאן בהמשך:
+      // - ניקח שם לרשימה
+      // - נשמור ל-Firestore/localStorage
+      // - נוסיף <li> חדש ל-saved-lists-list
+    });
+  }
+} else {
+  console.warn('⚠️ lists-sheet או lists-sheet-backdrop לא נמצאו ב-DOM');
+}
+
+
+/** ---------- RESET: action sheet + logic (HTML סטטי) ---------- **/
+
 function ensureResetSheet() {
-  if (document.getElementById('reset-sheet')) return;
+  const sheet    = document.getElementById('reset-sheet');
+  const backdrop = document.getElementById('reset-sheet-backdrop');
 
-  const sheet = document.createElement('div');
-  sheet.id = 'reset-sheet';
-  sheet.className = 'reset-sheet hidden';
-  sheet.innerHTML = `
-    <div class="sheet-handle" data-sheet-handle></div>
-    <div class="reset-sheet-title">איפוס הרשימה</div>
-    <p class="sheet-subtitle">
-      בחר האם לאפס הכל או רק את הקטגוריה הנוכחית.
-    </p>
-    <div class="reset-actions">
-      <button class="reset-btn warning" id="btn-reset-selected">
-        איפוס פריטים מסומנים
-      </button>
-      <button class="reset-btn secondary" id="btn-reset-category" disabled>
-        איפוס פריטים מסומנים בקטגוריה <span id="reset-cat-name">—</span>
-      </button>
-    </div>
-  `;
+  if (!sheet || !backdrop) {
+    console.warn('⚠️ reset-sheet או reset-sheet-backdrop לא נמצאו ב-DOM');
+    return;
+  }
 
+  // כדי שלא נחבר אירועים פעמיים
+  if (sheet._initialized) return;
 
-  const backdrop = document.createElement('div');
-  backdrop.id = 'reset-sheet-backdrop';
-  backdrop.className = 'auth-backdrop hidden'; // או מחלקה דומה לרקע שקוף
-
-  document.body.appendChild(sheet);
-  document.body.appendChild(backdrop);
-
-  // מחברים דרג + open/close מהפונקציה למעלה
+  // דרג + openSheet / closeSheet
   attachSheetDrag(sheet, backdrop);
 
-  // כפתורי האיפוס
   const btnResetSelected = sheet.querySelector('#btn-reset-selected');
   const btnResetCategory = sheet.querySelector('#btn-reset-category');
   const catNameSpan      = sheet.querySelector('#reset-cat-name');
 
-  // איפוס מסומנים – עם confirm קטן
+
+  // איפוס כל הפריטים המסומנים
   btnResetSelected.addEventListener('click', async () => {
     const ok = confirm('אתה בטוח שתרצה לאפס את כל הפריטים המסומנים?');
     if (!ok) return;
@@ -1330,16 +1377,18 @@ function ensureResetSheet() {
     sheet.closeSheet();
   });
 
-  // איפוס לפי קטגוריה נוכחית
+  // איפוס פריטים מסומנים בקטגוריה הנוכחית
   btnResetCategory.addEventListener('click', async () => {
     if (!currentCategory || currentCategory === 'הכל') return;
+
     const ok = confirm(`לאפס פריטים מסומנים בקטגוריה "${currentCategory}"?`);
     if (!ok) return;
+
     await resetCategorySelectedWithFX(currentCategory);
     sheet.closeSheet();
   });
 
-  // פונקציה קטנה שתעדכן את שם הקטגוריה ואת enabled/disabled
+  // הכנה לפני פתיחה – מעדכן שם קטגוריה + האם הכפתור השני זמין
   sheet.prepareForOpen = () => {
     catNameSpan.textContent = currentCategory || '—';
     const canResetCategory = currentCategory && currentCategory !== 'הכל';
@@ -1347,14 +1396,12 @@ function ensureResetSheet() {
     btnResetCategory.classList.toggle('disabled', !canResetCategory);
   };
 
-  // נשמור רפרנס גלובלי אם תרצה, אבל לא חובה
+
+  sheet._initialized = true;
 }
 
 
 
-
-
-// פותח את הדיאלוג
 // פותח את הדיאלוג
 function openResetSheet() {
   ensureResetSheet();
@@ -1366,6 +1413,7 @@ function openResetSheet() {
   }
   sheet.openSheet();
 }
+
 
 
 
