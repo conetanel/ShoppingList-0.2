@@ -46,7 +46,7 @@ html, body {
   }
 }
 .header h1 {
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: 600;
     color: #000;
     margin: 0;
@@ -326,10 +326,40 @@ html, body {
     display: none !important;
 }
 
+
 /* תיקוני Safe Area */
 .header { padding-top: calc(20px + env(safe-area-inset-top)); }
 
 
+:root{
+  --cat-bar-gap: 16px;       /* נשימה מתחת לסרגל */
+  --cat-fade-h: 46px;        /* גובה הדעיכה */
+  --slc-pad-top: 15px;         /* הפדינג העליון שיש לך על #shopping-list-container */  
+}
+
+/* נשימה מתחת לסרגל הקטגוריות */
+.category-filter-container{
+  padding-bottom: var(--cat-bar-gap);
+}
+
+/* שכבת ריכוך קבועה שמתחילה בדיוק מתחת להאדר */
+#cat-fade-overlay{
+  position: fixed;
+  left: 0; right: 0;
+  top: calc(var(--sticky-h, 140px) - 1px);  /* -1px לכיסוי החיתוך */
+  height: var(--cat-fade-h);
+  pointer-events: none;
+  z-index: 900;                   /* מעל התוכן, מתחת ל-bottom bar (שאתה שם על 1000) */
+  transform: translateZ(0);       /* יצוב קומפוזיט בספארי */
+  backface-visibility: hidden;
+
+  /* משתמש בצבע ההאדר שאתה כבר מגדיר ב-JS */
+  background: linear-gradient(
+    to bottom,
+    var(--header-bg, #F2F4F7) 0%,
+    rgba(0,0,0,0) 100%
+  );
+}
 
 /* כפתור אייקון במקום הטוגל */
 .item-controls .icon-toggle {
@@ -816,6 +846,12 @@ html {
 .reset-btn.secondary {
   background: #f2f2f7;
   color: #111;
+}
+
+.reset-btn.secondary.disabled,
+.reset-btn.secondary[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .user-menu-btn {
