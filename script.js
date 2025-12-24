@@ -29,6 +29,7 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
+  onSnapshot,  
 } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
 
@@ -132,6 +133,49 @@ let pendingInviteISent = null;    // הזמנה שאני בעליה (owner) וה
 let pendingInviteId = null;     // מזהה הזמנה שממתינה (אם יש)
 let hasPendingInvite = false;   // האם יש הזמנה פתוחה אליי (לאורח)
 let hasPendingInviteISent = false;
+let sharedMainUnsub = null; // נעשה בזה שימוש לסנכרון ריל־טיים בהמשך
+let pendingInviteForMe = null;   // (כרגע משמש רק לאיפוס state, אפשר להרחיב בהמשך)
+
+
+// ===== מאזין לשינויים אונליין =====
+function startSharedMainListener(sharedId) {
+  // מבטלים listener קודם אם קיים
+  if (sharedMainUnsub) {
+    sharedMainUnsub();
+    sharedMainUnsub = null;
+  }
+
+  if (!sharedId) return;
+
+  const sharedRef = doc(db, "sharedMains", sharedId);
+
+  sharedMainUnsub = onSnapshot(sharedRef, (snap) => {
+    if (!snap.exists()) {
+      console.warn("sharedMain נמחק מהשרת");
+
+      // 🧹 איפוס מצב שיתוף בצד ה"ננטש"
+      sharedMainId = null;
+      isLinkedToSharedList = false;
+      setCurrentListLabel(null);
+      updateUserMenuState();
+
+      // לא נוגעים ב-shoppingList – כבר הועתק ל-zMainList ע"י disconnectSharedMain בצד השני
+
+      alert("הצד השני ניתק את החיבור. אינך מחובר יותר לרשימה המשותפת.");
+      return;
+    }
+
+    const data = snap.data();
+    shoppingList = data.items || {};
+
+    saveShoppingCache(shoppingList);
+    updateUIWithSavedList(shoppingList);
+    updateUIFromShoppingList();
+  }, (err) => {
+    console.error("שגיאה בהאזנה ל-sharedMain:", err);
+  });
+}
+
 
 
 // ===== הגדרה לבדיקת הבר התחתון בדסקטופ =====
@@ -376,7 +420,11 @@ function openUserMenu() {
 
   updateUserMenuState();
   checkOwnerInviteStatus();
-  
+
+  if (currentUserEmail) {
+    checkPendingInvitesForUser(currentUserEmail);
+  }
+
   if (userMenuEmailLabel) {
     if (currentUserEmail) {
       userMenuEmailLabel.textContent = `מחובר כ־ ${currentUserEmail}`;
@@ -398,92 +446,92 @@ function closeUserMenu() {
 }
 
 
-if (userMenuBackdrop) {
-  userMenuBackdrop.addEventListener('click', closeUserMenu);
-}
+  if (userMenuBackdrop) {
+    userMenuBackdrop.addEventListener('click', closeUserMenu);
+  }
 
-// בינתיים – placeholders ללחצנים שבתפריט:
-if (userMergeBtn) {
-  userMergeBtn.addEventListener("click", async () => {
-    const user = auth.currentUser;
-    if (!user) {
-      openAuthSheet();
-      return;
-    }
-
-    // 1) אם כבר מחוברים לרשימה משותפת – לא אמורים להגיע לכאן (זה תפקיד כפתור שבירת חיבור)
-    if (isLinkedToSharedList) {
-      alert("כבר יש לך רשימה משותפת פעילה. כדי להתנתק – השתמש בכפתור 'שבירת חיבור'.");
-      return;
-    }
-
-    // 2) אם יש הזמנה ממתינה אליי כאורח
-    if (hasPendingInvite && pendingInviteId) {
-      const inviteInfo = window._lastInvite || {};
-      const ownerLabel = inviteInfo.ownerName || inviteInfo.ownerEmail || inviteInfo.ownerUid || "משתמש אחר";
-      const answer = confirm(
-        `קיבלת הזמנה לשיתוף רשימת קניות עם:\n${ownerLabel}\n\n` +
-        `לחץ OK כדי לאשר, או Cancel כדי לדחות.`
-      );
-
-      try {
-        if (answer) {
-          await acceptInvite(pendingInviteId);
-        } else {
-          await rejectInvite(pendingInviteId);
-        }
-      } catch (err) {
-        console.error("שגיאה בטיפול בהזמנה:", err);
+  // בינתיים – placeholders ללחצנים שבתפריט:
+  if (userMergeBtn) {
+      userMergeBtn.addEventListener("click", async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        openAuthSheet();
+        return;
       }
 
-      return;
-    }
+      // 1) אם כבר מחוברים לרשימה משותפת – לא אמורים להגיע לכאן (זה תפקיד כפתור שבירת חיבור)
+      if (isLinkedToSharedList) {
+        alert("כבר יש לך רשימה משותפת פעילה. כדי להתנתק – השתמש בכפתור 'שבירת חיבור'.");
+        return;
+      }
 
-    // 3) אם אני הבעלים ויש לי כבר הזמנה ששלחתי
-    if (hasPendingInviteISent && pendingInviteISent) {
-      // כאן הפכנו את הכפתור ל"כפתור ביטול הזמנה"
-      await cancelInviteISent();
-      return;
-    }
+      // 2) אם יש הזמנה ממתינה אליי כאורח
+      if (hasPendingInvite && pendingInviteId) {
+        const inviteInfo = window._lastInvite || {};
+        const ownerLabel = inviteInfo.ownerName || inviteInfo.ownerEmail || inviteInfo.ownerUid || "משתמש אחר";
+        const answer = confirm(
+          `קיבלת הזמנה לשיתוף רשימת קניות עם:\n${ownerLabel}\n\n` +
+          `לחץ OK כדי לאשר, או Cancel כדי לדחות.`
+        );
 
-    // 4) מצב רגיל – אין הזמנה פתוחה, אין שיתוף → שולחים הזמנה חדשה
-    const targetEmail = prompt("הכנס כתובת מייל של מי שתרצה לאחד איתו רשימת קניות:");
-    if (!targetEmail) return;
+        try {
+          if (answer) {
+            await acceptInvite(pendingInviteId);
+          } else {
+            await rejectInvite(pendingInviteId);
+          }
+        } catch (err) {
+          console.error("שגיאה בטיפול בהזמנה:", err);
+        }
 
-    try {
-      await sendInvite(targetEmail);
-      alert("ההזמנה נשלחה. כעת נמתין לאישור.");
-    } catch (err) {
-      console.error("שגיאה בשליחת הזמנה:", err);
-      alert("אירעה שגיאה בשליחת ההזמנה. נסה שוב.");
-    }
-  });
-}
+        return;
+      }
+
+      // 3) אם אני הבעלים ויש לי כבר הזמנה ששלחתי
+      if (hasPendingInviteISent && pendingInviteISent) {
+        // כאן הפכנו את הכפתור ל"כפתור ביטול הזמנה"
+        await cancelInviteISent();
+        return;
+      }
+
+      // 4) מצב רגיל – אין הזמנה פתוחה, אין שיתוף → שולחים הזמנה חדשה
+      const targetEmail = prompt("הכנס כתובת מייל של מי שתרצה לאחד איתו רשימת קניות:");
+      if (!targetEmail) return;
+
+      try {
+        await sendInvite(targetEmail);
+        alert("ההזמנה נשלחה. כעת נמתין לאישור.");
+      } catch (err) {
+        console.error("שגיאה בשליחת הזמנה:", err);
+        alert("אירעה שגיאה בשליחת ההזמנה. נסה שוב.");
+      }
+    });  
+  }
 
 
 
-if (userDisconnectBtn) {
-  userDisconnectBtn.addEventListener('click', () => {
-    if (!sharedMainId) return;
-    disconnectSharedMain();
-  });
-}
+  if (userDisconnectBtn) {
+    userDisconnectBtn.addEventListener('click', () => {
+      if (!sharedMainId) return;
+      disconnectSharedMain();
+    });
+  }
 
 
 
-if (userLogoutBtn) {
-  userLogoutBtn.addEventListener('click', async () => {
-    const ok = confirm('להתנתק מהמשתמש המחובר?');
-    if (!ok) return;
-    try {
-      await signOut(auth);
-      closeUserMenu();
-    } catch (err) {
-      console.error('שגיאה בהתנתקות:', err);
-      alert('שגיאה בהתנתקות: ' + (err.message || ''));
-    }
-  });
-}
+  if (userLogoutBtn) {
+    userLogoutBtn.addEventListener('click', async () => {
+      const ok = confirm('להתנתק מהמשתמש המחובר?');
+      if (!ok) return;
+      try {
+        await signOut(auth);
+        closeUserMenu();
+      } catch (err) {
+        console.error('שגיאה בהתנתקות:', err);
+        alert('שגיאה בהתנתקות: ' + (err.message || ''));
+      }
+    });
+  }
 
 
 
@@ -984,14 +1032,17 @@ function createItemElement(itemObj, category) {
       } else {
         shoppingList[itemObj.item] = { category };
       }
-      if (currentUserId) saveShoppingList(currentUserId, shoppingList);
     } else {
       itemControlsDiv.classList.add("locked");
       itemControlsDiv.classList.remove("show-controls");
       delete shoppingList[itemObj.item];
-      if (currentUserId) saveShoppingList(currentUserId, shoppingList);
     }
+
+    // 👇 תמיד אחרי שינוי הטוגל
+    saveShoppingCache(shoppingList);
+    if (currentUserId) saveShoppingList(currentUserId, shoppingList);
   });
+
   itemControlsDiv.appendChild(iconToggle);
 
   // יצירת בקרי כמות/מידה
@@ -1016,8 +1067,10 @@ function createItemElement(itemObj, category) {
         valueSpan.textContent = ++currentValue;
         if (iconToggle.classList.contains("active")) {
           shoppingList[itemObj.item] = { category, quantity: `${currentValue} יחידות` };
+          saveShoppingCache(shoppingList);
           if (currentUserId) saveShoppingList(currentUserId, shoppingList);
         }
+
       }
     });
 
@@ -1027,8 +1080,10 @@ function createItemElement(itemObj, category) {
         valueSpan.textContent = --currentValue;
         if (iconToggle.classList.contains("active")) {
           shoppingList[itemObj.item] = { category, quantity: `${currentValue} יחידות` };
+          saveShoppingCache(shoppingList);
           if (currentUserId) saveShoppingList(currentUserId, shoppingList);
         }
+
       }
     });
 
@@ -1047,6 +1102,7 @@ function createItemElement(itemObj, category) {
         button.classList.add("active");
         if (iconToggle.classList.contains("active")) {
           shoppingList[itemObj.item] = { category, size: button.textContent };
+          saveShoppingCache(shoppingList);
           if (currentUserId) saveShoppingList(currentUserId, shoppingList);
         }
       });
@@ -1243,44 +1299,76 @@ function normalizeProps(rawProps = {}) {
 // ⭐ שמירת רשימת הקניות לפי המודל החדש עם properties ממוספרים
 // - אם יש sharedMainId → נשמור ברשימה משותפת (sharedMains)
 // - אם אין → נשמור ב-zMainList האישי של המשתמש
+// ⭐ שמירת רשימת הקניות לפי המודל החדש עם החלפה מלאה של ה-map בפיירסטור
 async function saveShoppingList(userId, list) {
+  // שמירה לקאש מקומי כרגיל
   saveShoppingCache(list);
 
   const user = auth.currentUser;
   if (!user) return;
 
-  const userDocRef = doc(db, "users", userId);
+  const safeList = list || {};
 
   try {
     if (sharedMainId) {
-      // 🟩 רשימה משותפת – מעדכנים אך ורק את הרשימה המשותפת
+      // 🟩 מצב של רשימה משותפת – מחליפים את items *כולו*
       const sharedRef = doc(db, "sharedMains", sharedMainId);
-      await setDoc(sharedRef, { items: list }, { merge: true });
+
+      try {
+        // מחליף את כל items במפה החדשה (מוחק מפתחות ישנים)
+        await updateDoc(sharedRef, { items: safeList });
+      } catch (err) {
+        // אם המסמך עדיין לא קיים מסיבה כלשהי – נוצר אותו
+        if (err.code === "not-found") {
+          await setDoc(
+            sharedRef,
+            {
+              items: safeList,
+            },
+            { merge: true } // כאן merge בסדר – כי זה יצירה ראשונה
+          );
+        } else {
+          throw err;
+        }
+      }
     } else {
-      // 🟦 רשימה פרטית – כאן כן מעדכנים גם properties
+      // 🟦 רשימה פרטית למשתמש
+      const userDocRef = doc(db, "users", userId);
       const { userLabel, ownerEmail } = buildUserMeta(user);
 
-      await setDoc(
-        userDocRef,
-        {
-          properties: buildNumberedProperties({
-            userLabel,
-            ownerEmail,
-            sharedMainId: null,
-            sharedWith: [],
-            mergedWithLabel: null,
-          }),
-          zMainList: list,
-        },
-        { merge: true }
-      );
+      const props = buildNumberedProperties({
+        userLabel,
+        ownerEmail,
+        sharedMainId: null,
+        sharedWith: [],
+        mergedWithLabel: null,
+      });
+
+      try {
+        // מחליף את zMainList במפה החדשה (מוחק פריטים שנעלמו)
+        await updateDoc(userDocRef, {
+          properties: props,
+          zMainList: safeList,
+        });
+      } catch (err) {
+        // אם זה משתמש חדש ואין עדיין דוקומנט → setDoc ראשון
+        if (err.code === "not-found") {
+          await setDoc(userDocRef, {
+            properties: props,
+            zMainList: safeList,
+          });
+        } else {
+          throw err;
+        }
+      }
     }
 
-    console.log("💾 רשימת קניות נשמרה בהצלחה!");
+    console.log("💾 רשימת קניות נשמרה (כולל מחיקת פריטים שנמחקו מהאובייקט)");
   } catch (error) {
     console.error("❌ שגיאה בשמירת רשימת הקניות:", error);
   }
 }
+
 
 
 
@@ -1306,12 +1394,14 @@ async function loadUserShoppingList(userId) {
     }
 
     const data = docSnap.data();
-    const { sharedMainId: loadedSharedMainId } = normalizeProps(data.properties || {});
+
+    // 🔧 שלב 1: מנרמלים properties פעם אחת
+    const propsNorm = normalizeProps(data.properties || {});
+    const { sharedMainId: loadedSharedMainId, mergedWithLabel } = propsNorm;
 
     // לוגיקה חדשה:
     sharedMainId = loadedSharedMainId || null;
     isLinkedToSharedList = !!sharedMainId;
-    const mergedWithLabel = propsNorm.mergedWithLabel || null;
 
     if (sharedMainId) {
       // 🟩 רשימה מאוחדת
@@ -1323,19 +1413,16 @@ async function loadUserShoppingList(userId) {
       } else {
         shoppingList = {};
       }
+      startSharedMainListener(sharedMainId);
     } else {
       // 🟦 רשימה אישית
       if (data.zMainList) {
         shoppingList = data.zMainList;
-      }
-      // תאימות לקוד ישן
-      else if (data.mainList) {
+      } else if (data.mainList) {
         shoppingList = data.mainList;
-      }
-      else if (data.shoppingList) {
+      } else if (data.shoppingList) {
         shoppingList = data.shoppingList;
-      }
-      else {
+      } else {
         shoppingList = {};
       }
     }
@@ -1343,19 +1430,20 @@ async function loadUserShoppingList(userId) {
     saveShoppingCache(shoppingList);
     updateUIWithSavedList(shoppingList);
     updateUIFromShoppingList();
+
+    // 🔧 העברת הטיפול במיתוג ההדר לפה
+    if (sharedMainId && mergedWithLabel) {
+      setCurrentListLabel(mergedWithLabel);
+    } else {
+      setCurrentListLabel(null);
+    }
+
+    updateUserMenuState();
   } catch (error) {
     console.error("שגיאה בקבלת רשימת הקניות:", error);
   }
-    if (sharedMainId && mergedWithLabel) {
-      // לדוגמה: "משותפת עם מיכל"
-      setCurrentListLabel(mergedWithLabel);
-    } else {
-      // רשימה פרטית – אפשר לשים משהו נייטרלי או כלום
-      // setCurrentListLabel("רשימה ראשית");
-      setCurrentListLabel(null);
-    }
-  updateUserMenuState();
 }
+
 
 ///=====פונקציית שליחת הזמנות=====/
 // ⭐ שליחת הזמנה לאיחוד רשימות
@@ -1484,53 +1572,73 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUserId = user.uid;
 
-    const provider = (user.providerData && user.providerData[0]) || null;
+    const provider      = (user.providerData && user.providerData[0]) || null;
     const providerEmail = provider?.email || null;
     const providerName  = provider?.displayName || null;
     const displayName   = user.displayName || providerName || null;
-    const sheet = document.getElementById('auth-sheet');
-    const backdrop = document.getElementById('auth-backdrop');
-    currentUserEmail = user.email || providerEmail || displayName || null;
+    const sheet         = document.getElementById('auth-sheet');
+    const backdrop      = document.getElementById('auth-backdrop');
 
+    currentUserEmail = user.email || providerEmail || displayName || null;
 
     console.log("🔵 onAuthStateChanged user:", user);
     console.log("🔵 מחובר, uid:", currentUserId, "email:", currentUserEmail);
 
-     if (sheet && backdrop) {
+    if (sheet && backdrop) {
       sheet.classList.remove('show');
       backdrop.classList.remove('show');
       sheet.classList.add('hidden');
       backdrop.classList.add('hidden');
       sheet.setAttribute('aria-hidden', 'true');
-    } 
+    }
 
-    // טוען רשימה וסטטוס groupId
-      await loadUserShoppingList(currentUserId);
-        
-      if (currentUserEmail) {
-        await checkPendingInvitesForUser(currentUserEmail); // כ"אורח"
-      }
+    // 🧹 מאפסים state הזמנות/שיתוף כדי להתחיל נקי לכל התחברות
+    isLinkedToSharedList   = false;
+    sharedMainId           = null;
+    pendingInviteISent     = null;
+    hasPendingInviteISent  = false;
+    pendingInviteId        = null;
+    hasPendingInvite       = false;
+    pendingInviteForMe     = null;
+    window._lastInvite     = null;
 
-      await checkOwnerInviteStatus(); // כ"בעלים"
-    } else {
+    // טוען רשימה וסטטוס sharedMainId (אם יש)
+    await loadUserShoppingList(currentUserId);
+
+    // בודק הזמנות אליי (כאורח)
+    if (currentUserEmail) {
+      await checkPendingInvitesForUser(currentUserEmail);
+    }
+
+    // בודק הזמנות שאני בעלים שלהן
+    await checkOwnerInviteStatus();
+
+  } else {
     console.log("🔴 לא מחובר");
 
-    currentUserId     = null;
-    currentUserEmail  = null;
-    isLinkedToSharedList = false;
-    sharedMainId        = null;   
+    currentUserId          = null;
+    currentUserEmail       = null;
+    isLinkedToSharedList   = false;
+    sharedMainId           = null;
 
     shoppingList = {};
     saveShoppingCache(shoppingList);
-  }
-    if (!user) {
-    sharedMainId = null;
-    pendingInviteISent = null;
-    pendingInviteForMe = null;
-    hasPendingInvite = false;
-    hasPendingInviteISent = false;
-    pendingInviteId = null;
 
+    // 🧹 איפוס מלא של כל ה־flags
+    pendingInviteISent     = null;
+    hasPendingInviteISent  = false;
+
+    pendingInviteId        = null;
+    hasPendingInvite       = false;
+
+    pendingInviteForMe     = null;
+    window._lastInvite     = null;
+
+    // סוגרים גם listener לרשימה משותפת אם קיים
+    if (sharedMainUnsub) {
+      sharedMainUnsub();
+      sharedMainUnsub = null;
+    }
   }
 
   updateLoginButtonUI();
@@ -1588,7 +1696,8 @@ async function checkPendingInvitesForUser(email) {
       id: docSnap.id,
       ...inviteData,
     };
-
+    //לחיצה על איחוד רשימות
+    
     updateUserMenuState();
   } catch (err) {
     console.error("שגיאה בבדיקת הזמנות ממתינות:", err);
@@ -1627,7 +1736,7 @@ async function checkOwnerInviteStatus() {
     // מפה והלאה: ההזמנה כבר נסגרה (rejected / accepted / cancelled / expired)
     // אם כבר ראינו בעבר – לא להציק שוב
     if (inv.ownerSeen) return;
-
+    
     let msg;
     switch (inv.status) {
       case "rejected":
@@ -1645,6 +1754,8 @@ async function checkOwnerInviteStatus() {
       default:
         msg = null;
     }
+
+    await loadUserShoppingList(user.uid);
 
     if (msg) {
       alert(msg);
@@ -1675,6 +1786,8 @@ async function acceptInvite(inviteId) {
 
   if (!inviteSnap.exists()) {
     console.warn("הזמנה לא קיימת");
+    alert("ההזמנה כבר לא קיימת או נסגרה. אפשר לבקש מהצד השני לשלוח שוב.");
+    updateUserMenuState();
     return;
   }
 
@@ -1682,17 +1795,20 @@ async function acceptInvite(inviteId) {
 
   if (inv.status !== "pending") {
     console.warn("ההזמנה כבר לא במצב pending:", inv.status);
+    alert("ההזמנה כבר לא קיימת או נסגרה. אפשר לבקש מהצד השני לשלוח שוב.");
+    updateUserMenuState();
     return;
   }
 
   // בדיקת תוקף
   if (inv.expiresAt && inv.expiresAt.toMillis && inv.expiresAt.toMillis() < Date.now()) {
     console.warn("ההזמנה פגה");
+    alert("ההזמנה כבר לא קיימת או נסגרה. אפשר לבקש מהצד השני לשלוח שוב.");
     try {
       await updateDoc(inviteRef, { status: "expired" });
     } catch (_) {}
-    pendingInviteId = null;
-    hasPendingInvite = false;
+    pendingInviteId   = null;
+    hasPendingInvite  = false;
     updateUserMenuState();
     return;
   }
@@ -1707,6 +1823,7 @@ async function acceptInvite(inviteId) {
   const ownerSnap   = await getDoc(ownerDocRef);
 
   let baseList = {};
+  let ownerPropsRaw = {};
   if (ownerSnap.exists()) {
     const ownerData = ownerSnap.data();
     baseList =
@@ -1714,14 +1831,24 @@ async function acceptInvite(inviteId) {
       ownerData.mainList ||
       ownerData.shoppingList ||
       {};
+    ownerPropsRaw = ownerData.properties || {};
   }
 
-  // 2) בונים ID לרשימה המשותפת
-  const ownerSuffix = ownerUid.slice(-6);
-  const guestSuffix = guestUid.slice(-6);
-  const newSharedMainId = `shared_${ownerSuffix}_${guestSuffix}`;
+  // 2) גם את מסמך האורח נטען (לצורך properties קיימים)
+  const guestDocRef = doc(db, "users", guestUid);
+  const guestSnap   = await getDoc(guestDocRef);
+  const guestPropsRaw = guestSnap.exists() ? (guestSnap.data().properties || {}) : {};
 
-  // 3) יוצרים מסמך sharedMains/{sharedMainId}
+  // ממירים properties ממוספרים לאובייקט נוח
+  const ownerPropsNormalized = normalizeProps(ownerPropsRaw);
+  const guestPropsNormalized = normalizeProps(guestPropsRaw);
+
+  // 3) בונים ID לרשימה המשותפת
+  const ownerSuffix      = ownerUid.slice(-6);
+  const guestSuffix      = guestUid.slice(-6);
+  const newSharedMainId  = `shared_${ownerSuffix}_${guestSuffix}`;
+
+  // 4) יוצרים מסמך sharedMains/{sharedMainId}
   const sharedRef = doc(db, "sharedMains", newSharedMainId);
   await setDoc(
     sharedRef,
@@ -1731,8 +1858,8 @@ async function acceptInvite(inviteId) {
       ownerEmail,
       ownerName,
       participants: [
-        { uid: ownerUid, email: ownerEmail },
-        { uid: guestUid, email: currentUserEmail || null },
+        { uid: ownerUid,  email: ownerEmail },
+        { uid: guestUid,  email: currentUserEmail || null },
       ],
       items: baseList,
       createdAt: serverTimestamp(),
@@ -1740,63 +1867,57 @@ async function acceptInvite(inviteId) {
     { merge: true }
   );
 
-  // 4) מעדכנים את מסמכי המשתמשים (owner + guest)
-    const ownerPropsRaw = (ownerSnap.exists() && ownerSnap.data().properties) || {};
-    const guestPropsRaw = (guestSnap.exists() && guestSnap.data().properties) || {};
+  // 5) מעדכנים את מסמכי המשתמשים (owner + guest) – עם properties ממוספרים
+  const labelForOwner = inv.targetEmail || "משתמש נוסף";
+  const labelForGuest = ownerName || ownerEmail || "משתמש נוסף";
 
-    const ownerPropsNorm = normalizeProps(ownerPropsRaw);
-    const guestPropsNorm = normalizeProps(guestPropsRaw);
+  await Promise.all([
+    setDoc(
+      ownerDocRef,
+      {
+        properties: buildNumberedProperties({
+          ...ownerPropsNormalized,
+          sharedMainId: newSharedMainId,
+          mergedWithLabel: `משותפת עם ${labelForOwner}`,
+        }),
+      },
+      { merge: true }
+    ),
+    setDoc(
+      guestDocRef,
+      {
+        properties: buildNumberedProperties({
+          ...guestPropsNormalized,
+          sharedMainId: newSharedMainId,
+          mergedWithLabel: `משותפת עם ${labelForGuest}`,
+        }),
+      },
+      { merge: true }
+    ),
+  ]);
 
-    const labelForOwner = inv.targetEmail || "משתמש נוסף";
-    const labelForGuest = ownerName || ownerEmail || "משתמש נוסף";
-
-    ownerPropsNorm.sharedMainId    = newSharedMainId;
-    ownerPropsNorm.mergedWithLabel = `משותפת עם ${labelForOwner}`;
-
-    guestPropsNorm.sharedMainId    = newSharedMainId;
-    guestPropsNorm.mergedWithLabel = `משותפת עם ${labelForGuest}`;
-
-    await Promise.all([
-      setDoc(
-        ownerDocRef,
-        {
-          properties: buildNumberedProperties(ownerPropsNorm),
-        },
-        { merge: true }
-      ),
-      setDoc(
-        guestDocRef,
-        {
-          properties: buildNumberedProperties(guestPropsNorm),
-        },
-        { merge: true }
-      ),
-    ]);
-
-  // 5) מעדכנים את ההזמנה כ-accepted
+  // 6) מעדכנים את ההזמנה כ-accepted
   await updateDoc(inviteRef, {
     status: "accepted",
     sharedMainId: newSharedMainId,
   });
 
-  // 6) מעדכנים state לוקאלי
-  sharedMainId = newSharedMainId;
-  isLinkedToSharedList = true;
-  pendingInviteId = null;
-  hasPendingInvite = false;
+  // 7) מעדכנים state לוקאלי
+  sharedMainId          = newSharedMainId;
+  isLinkedToSharedList  = true;
+  pendingInviteId       = null;
+  hasPendingInvite      = false;
 
-  // 7) טוענים את הרשימה המשותפת לממשק
-  const finalSharedSnap = await getDoc(sharedRef);
-  shoppingList = finalSharedSnap.exists() ? (finalSharedSnap.data().items || {}) : {};
-  saveShoppingCache(shoppingList);
-  updateUIWithSavedList(shoppingList);
-  updateUIFromShoppingList();
-  updateUserMenuState();
+  // 8) מאזינים מעכשיו לרשימה המשותפת בריל-טיים
+  startSharedMainListener(newSharedMainId);
 
   console.log("✅ ההזמנה אושרה והמעבר לרשימה משותפת הושלם");
 
-  // 8) מעדכנים סאבטייטל בהדר
+  // 9) מעדכנים סאבטייטל בהדר
   setCurrentListLabel(`משותפת עם ${labelForGuest}`);
+
+  // 9) מעדכנים סטייט במניו
+  updateUserMenuState();
 }
 
 
@@ -1854,6 +1975,11 @@ async function disconnectSharedMain() {
   const ok = confirm("לנתק את הרשימה המשותפת? הרשימה תשמר לכל אחד כרשימה פרטית.");
   if (!ok) return;
 
+  // סוגרים listener חי
+  if (sharedMainUnsub) {
+    sharedMainUnsub();
+    sharedMainUnsub = null;
+  }
   const sharedRef = doc(db, "sharedMains", sharedMainId);
   const sharedSnap = await getDoc(sharedRef);
 
@@ -1911,7 +2037,7 @@ async function disconnectSharedMain() {
   updateUIWithSavedList(shoppingList);
   updateUIFromShoppingList();
   updateUserMenuState();
-
+  setCurrentListLabel(null);
   console.log("🔗 נותקת מהרשימה המשותפת, והרשימה נשמרה כפרטית");
 }
 
