@@ -679,6 +679,24 @@ html {
   color: #3a3a3c;
   
 }
+
+#btn-login.has-badge {
+  position: relative;
+}
+
+#btn-login.has-badge::after {
+  content: "";
+  position: absolute;
+  top: 0px;
+  left: 39%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #FF3B30;
+}
+
+
 #bottom-bar .tab-btn.active ion-icon,
 #bottom-bar .tab-btn.active span{
   color: var(--bottom-bar-fg-active);
